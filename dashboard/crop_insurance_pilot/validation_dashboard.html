@@ -190,11 +190,29 @@
     <div class="card">
       <h3>Cadastral &amp; GeoAI Parcel Map <span class="tag ref">Khasra = spatial reference</span>
         <span class="tag syn">synthetic parcels</span></h3>
+      <div class="maptools" style="gap:10px">
+        <div class="fld" style="min-width:210px">
+          <label for="selKhasra">Search khasra / parcel</label>
+          <select id="selKhasra" style="min-width:210px"><option value="">-- Choose from parcels --</option></select>
+        </div>
+        <div class="fld" style="min-width:150px">
+          <label for="selCrop">Filter by crop</label>
+          <select id="selCrop" style="min-width:150px"><option value="">-- All crops --</option></select>
+        </div>
+        <div class="fld" style="min-width:0">
+          <label>&nbsp;</label>
+          <div style="display:flex;gap:6px">
+            <button id="btnFlyTo" disabled>Fly to</button>
+            <button id="btnShowAll">Show all</button>
+          </div>
+        </div>
+      </div>
       <div class="maptools">
         <button id="btnBaseCad" class="on">Cadastral sheet</button>
         <button id="btnBaseSat">Satellite</button>
         <button id="btnLyrKhasra" class="on">Khasra numbers</button>
         <button id="btnLyrComp" class="on">Land-use split</button>
+        <button id="btnLyrMedh" class="on">Medh (bund) lines</button>
         <button id="btnZoomVillage">Zoom to village</button>
         <button id="btnZoomParcel" disabled>Zoom to parcel</button>
       </div>
@@ -206,6 +224,7 @@
         <span><i style="background:#9aa7b2"></i>Farm road</span>
         <span><i style="background:#3d7ea6"></i>Water body</span>
         <span><i style="background:#7a6a55"></i>Other non-crop</span>
+        <span><i style="background:transparent;border:2px dashed #8a6a3a"></i>Medh / khasra boundary</span>
         <span><i style="background:transparent;border:2px solid #b3341f"></i>Selected parcel</span>
         <span><i style="background:transparent;border:2px solid #0d5c63"></i>Village boundary (real SoI)</span>
       </div>

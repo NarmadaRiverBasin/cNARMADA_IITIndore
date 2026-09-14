@@ -36,13 +36,23 @@
 
   var DATA_URL = '../data/crop_insurance_pilot/synthetic_farmers_100.json';
   var VILLAGE_URL = '../data/crop_insurance_pilot/simrol_boundary.geojson';
+  // REAL AGMARKNET prices, same file the main dashboard's Mandi panel uses.
+  // Owner asked for a "real monetary option" on the cultivated area. The
+  // notified Sum Insured per hectare in the dataset is already a real
+  // government figure, so that is the anchor that is ALWAYS available; a
+  // market valuation on top of it needs a real published price, which only
+  // exists on days this district actually reported arrivals. Where it does
+  // not, this says so rather than substituting another district's price.
+  var MANDI_URL = '../data/mandi_prices.json';
+  var MANDI = null;
 
   var DATA = null, FARMERS = [], META = {};
   var map = null, baseCad = null, baseSat = null;
   var layerVillage = null, layerParcels = null, layerLabels = null,
       layerSelected = null, layerComponents = null;
   var selected = null;
-  var showKhasra = true, showComponents = true;
+  var showKhasra = true, showComponents = true, showMedh = true;
+  var cropFilter = '';
   var charts = {};
 
   var COMP_STYLE = {
@@ -88,13 +98,19 @@
 
   function boot() {
     initMap();
-    Promise.all([fetchJson(DATA_URL), fetchJson(VILLAGE_URL).catch(function () { return null; })])
+    Promise.all([
+      fetchJson(DATA_URL),
+      fetchJson(VILLAGE_URL).catch(function () { return null; }),
+      fetchJson(MANDI_URL).catch(function () { return null; })
+    ])
       .then(function (res) {
         DATA = res[0];
         META = DATA.metadata || {};
         FARMERS = DATA.farmers || [];
+        MANDI = res[2];
         try { drawVillage(res[1]); } catch (e) { console.warn('[validation] village boundary:', e); }
         drawAllParcels();
+        buildParcelTools();
         buildCascade();
         showCoverage();
       })
@@ -161,6 +177,17 @@
       }
     };
     el('btnZoomParcel').onclick = zoomToParcel;
+    el('btnLyrMedh').onclick = function () {
+      showMedh = !showMedh; this.classList.toggle('on', showMedh); drawAllParcels();
+    };
+    el('btnFlyTo').onclick = zoomToParcel;
+    el('btnShowAll').onclick = function () {
+      cropFilter = ''; el('selCrop').value = ''; drawAllParcels();
+      if (layerVillage.getLayers().length) {
+        var b = L.featureGroup(layerVillage.getLayers()).getBounds();
+        if (b.isValid()) map.fitBounds(b, { padding: [20, 20] });
+      }
+    };
   }
 
   function setBase(which) {
@@ -193,9 +220,18 @@
     layerLabels.clearLayers();
     FARMERS.forEach(function (f) {
       if (!f.geometry) return;
+      // Cadastral sheets are line-work with khasra numbers, not filled
+      // boxes -- the medh (bund) line is the heavier dashed edge, the fill
+      // is a pale parchment wash so imagery stays readable underneath.
+      var dim = cropFilter && f.girdawari && f.girdawari.crop !== cropFilter;
       var poly = L.geoJSON(f.geometry, {
         style: {
-          color: '#6b4f2a', weight: 1, fillColor: '#e8dcc2', fillOpacity: 0.45
+          color: showMedh ? '#8a6a3a' : '#b9a883',
+          weight: showMedh ? 1.6 : 0.8,
+          dashArray: showMedh ? '4 2' : null,
+          fillColor: '#efe6d2',
+          fillOpacity: dim ? 0.08 : 0.35,
+          opacity: dim ? 0.25 : 1
         }
       });
       poly.on('click', function () { selectFarmer(f.farmer_id, true); });
@@ -244,6 +280,36 @@
   // ------------------------------------------------------------------
   // Cascade: District -> Village -> Farmer
   // ------------------------------------------------------------------
+  // Khasra search and crop filter, mirroring the cadastral panel the owner
+  // pointed at as the reference. Both are driven off the dataset, so they
+  // list exactly the parcels/crops that exist -- no placeholder entries.
+  function buildParcelTools() {
+    var ksel = el('selKhasra'), csel = el('selCrop');
+    var rows = FARMERS.slice().sort(function (a, b) {
+      return String(a.khasra_no).localeCompare(String(b.khasra_no), undefined, { numeric: true });
+    });
+    ksel.innerHTML = '<option value="">-- Choose from ' + FARMERS.length + ' parcels --</option>';
+    rows.forEach(function (f) {
+      var o = document.createElement('option');
+      o.value = f.farmer_id;
+      o.textContent = f.khasra_no + ' · ' + f.farmer_name;
+      ksel.appendChild(o);
+    });
+    var crops = [];
+    FARMERS.forEach(function (f) {
+      var c = f.girdawari && f.girdawari.crop;
+      if (c && crops.indexOf(c) < 0) crops.push(c);
+    });
+    crops.sort();
+    csel.innerHTML = '<option value="">-- All crops (' + crops.length + ') --</option>';
+    crops.forEach(function (c) {
+      var o = document.createElement('option'); o.value = c; o.textContent = c; csel.appendChild(o);
+    });
+
+    ksel.onchange = function () { if (this.value) selectFarmer(this.value, true); };
+    csel.onchange = function () { cropFilter = this.value || ''; drawAllParcels(); };
+  }
+
   function buildCascade() {
     var dsel = el('selDistrict');
     var districts = [];
@@ -309,6 +375,8 @@
     layerComponents.clearLayers();
     el('btnReport').disabled = true;
     el('btnZoomParcel').disabled = true;
+    var fb = el('btnFlyTo'); if (fb) fb.disabled = true;
+    var kb = el('selKhasra'); if (kb) kb.value = '';
     destroyCharts();
     ['panelParcel', 'panelArea', 'panelLandUse', 'panelHazard', 'panelLoss', 'panelInsurance']
       .forEach(function (id) { el(id).innerHTML = '<div class="empty">&mdash;</div>'; });
@@ -352,6 +420,8 @@
 
     el('btnReport').disabled = false;
     el('btnZoomParcel').disabled = false;
+    el('btnFlyTo').disabled = false;
+    if (el('selKhasra').value !== String(f.farmer_id)) el('selKhasra').value = f.farmer_id;
     renderSelectedOnMap();
     zoomToParcel();
     destroyCharts();
@@ -380,12 +450,22 @@
       '<div class="b refbox"><div class="lab">Cadastral area</div><div class="val">' + ha(f.cadastral_area_ha) + '</div>' +
       '<div class="sub">reference only</div></div>' +
       '</div>';
+    // B-1 / land-record framing, matching the cadastral panel the owner
+    // pointed at as the reference. Owner name here is the dataset's own
+    // SYNTHETIC placeholder (SYN-FARMER-nnn / किसान-उदाहरण-nnn) and is
+    // labelled as such -- this deliberately does NOT reintroduce the
+    // procedurally-generated realistic-looking owner names the 2026-08
+    // cleanup removed (see CLAUDE.md's "one rule that overrides everything").
+    h += '<div style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#64798e;text-transform:uppercase;margin:2px 0 5px">Land record (B-1) &middot; synthetic</div>';
     h += '<div class="kv">' +
-      row('Farmer', t(f.farmer_name) + (f.farmer_name_local ? ' <span style="color:#64798e">(' + t(f.farmer_name_local) + ')</span>' : '')) +
+      row('Owner name', t(f.farmer_name) + (f.farmer_name_local ? ' <span style="color:#64798e">(' + t(f.farmer_name_local) + ')</span>' : '')) +
       row('Farmer ID', t(f.farmer_id)) +
+      row('Khasra no.', t(f.khasra_no)) +
+      row('Area (ha)', ha(f.cadastral_area_ha)) +
       row('Village / Tehsil', t(f.village) + ' / ' + t(f.tehsil)) +
       row('District / State', t(f.district) + ' / ' + t(f.state)) +
       row('Land status', t(f.land_status)) +
+      row('Irrigation source', t(f.irrigation_source)) +
       '<div class="sep"></div>' +
       row('Girdawari crop', t(f.girdawari && f.girdawari.crop)) +
       row('Girdawari season', t(f.girdawari && f.girdawari.season)) +
@@ -634,12 +714,75 @@
       row('Yield shortfall', pct(ins.yield_shortfall_pct)) +
       row('Policy status', t(ins.status)) +
       '</div>';
+    h += mandiValueBlock(f, cult, ins);
     h += '<div class="note"><b>Claim basis.</b> The indicative claim follows PMFBY\'s yield-shortfall formula ' +
       '(shortfall &divide; threshold &times; sum insured), <b>not</b> damage-area &times; sum insured. The sum insured ' +
       'itself is built on the <b>insured/cultivated</b> area (' + ha(ins.insured_area_ha) + '), not the cadastral area ' +
       '(' + ha(f.cadastral_area_ha) + '). Premium caps and yield baselines come from real notified PMFBY rates and real ' +
       'DES Indore yield history; the policy record itself is synthetic.</div>';
     el('panelInsurance').innerHTML = h;
+  }
+
+  // Owner asked to see a REAL monetary value against the cultivated area.
+  // Two different things are on offer and they are kept apart:
+  //   * Sum insured per hectare -- a REAL government-notified figure, always
+  //     available, already used by the claim maths above.
+  //   * Market value -- needs a REAL published mandi price for this crop in
+  //     this district. AGMARKNET only carries a price on days that district
+  //     actually reported arrivals, so this is shown when it exists and
+  //     honestly declared missing when it does not. Another district's price
+  //     is never substituted, and no price is ever carried forward.
+  function slug(x) {
+    return String(x || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  }
+  function mandiModalFor(districtName, cropName) {
+    if (!MANDI || !MANDI.districts) return null;
+    var d = MANDI.districts[slug(districtName)];
+    if (!d || !d.records || !d.records.length) return { missing: true, note: d && d.note };
+    var want = slug(cropName), hits = d.records.filter(function (r) { return slug(r.commodity) === want; });
+    if (!hits.length) return { missing: true, note: 'No arrival for ' + cropName + ' in ' + districtName + ' in the current release.' };
+    var sum = hits.reduce(function (a, r) { return a + r.modal_price; }, 0);
+    return { modal: sum / hits.length, n: hits.length, market: hits[0].market, date: (d.arrival_dates || [])[0] };
+  }
+
+  function mandiValueBlock(f, cult, ins) {
+    var crop = (f.tech && f.tech.ai_crop) || (f.girdawari && f.girdawari.crop);
+    var m = mandiModalFor(f.district, crop);
+    var h = '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">' +
+      '<div style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#64798e;text-transform:uppercase;margin-bottom:6px">' +
+      'Indicative monetary value on cultivated area</div>';
+
+    var siVal = (ins.sum_insured_per_ha != null && cult != null) ? ins.sum_insured_per_ha * cult : null;
+    h += '<div class="kv">' +
+      row('Cultivated area (GeoAI)', ha(cult)) +
+      row('Notified sum insured / ha <span class="tag ok">real</span>', inr(ins.sum_insured_per_ha)) +
+      row('Insured value on cultivated area', inr(siVal)) +
+      '</div>';
+
+    if (m && !m.missing && ins.actual_yield_t_ha != null && cult != null) {
+      // quintal = 0.1 t, and AGMARKNET modal prices are Rs/quintal
+      var qtl = ins.actual_yield_t_ha * cult * 10;
+      var qtlExp = (ins.threshold_yield_t_ha != null) ? ins.threshold_yield_t_ha * cult * 10 : null;
+      var val = qtl * m.modal;
+      var valExp = qtlExp != null ? qtlExp * m.modal : null;
+      h += '<div class="kv" style="margin-top:6px">' +
+        row('Mandi modal price <span class="tag ok">real AGMARKNET</span>', inr(m.modal) + ' / quintal') +
+        row('Estimated produce', qtl.toFixed(1) + ' quintal') +
+        row('Indicative market value', inr(val)) +
+        (valExp != null ? row('Value had yield met threshold', inr(valExp)) : '') +
+        (valExp != null ? row('Indicative value of loss', inr(valExp - val)) : '') +
+        '</div>';
+      h += '<div style="font-size:11px;color:#64798e;margin-top:5px">Price: ' + t(m.market) +
+        (m.date ? ' &middot; ' + t(m.date) : '') + (m.n > 1 ? ' &middot; mean of ' + m.n + ' rows' : '') +
+        ' &mdash; real published APMC arrival.</div>';
+    } else {
+      h += '<div style="font-size:11.5px;color:#8a6100;background:#fff6e0;border-radius:5px;padding:7px 9px;margin-top:6px;line-height:1.55">' +
+        '<b>Market value not shown.</b> No real AGMARKNET modal price is published for ' + t(crop) + ' in ' +
+        t(f.district) + ' in the current release' + (MANDI && MANDI.metadata ? ' (' + t(MANDI.metadata.last_updated) + ')' : '') +
+        '. A price from another district or an older day is deliberately not substituted, so the market valuation is ' +
+        'left out rather than estimated. The insured value above is a real notified figure and is unaffected.</div>';
+    }
+    return h + '</div>';
   }
 
   function renderIntegrated(f) {
