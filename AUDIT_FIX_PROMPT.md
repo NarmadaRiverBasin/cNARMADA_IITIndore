@@ -728,6 +728,12 @@ number hai.
    Agriculture abhi bhi table/text-first hain, chart-first nahi.
 2. **Item 0C (star-wise)** -- block aur village star par NDVI/Rainfall
    ka poora cross-check baaki hai.
-3. **Chhota latent bug** -- `live_weather_loader.js` **do** "Live
-   Weather" tab node banata hai (dono hidden hain, isliye user ko
-   dikhta nahi, par saaf karna chahiye).
+3. ~~Chhota latent bug -- `live_weather_loader.js` do "Live Weather"
+   tab node banata hai.~~ **Ye meri galti thi, bug nahi.** Theek se
+   jaancha to ye do **alag-alag** tab hain: `#nasa-tab`
+   (geoai_professional.js ka NASA-only weather) aur
+   `#liveweather-tab` (live_weather_loader.js ka richer wala). Dono
+   jaan-boojh kar `btm-tab-dup` (hidden) hain, aur
+   `live_weather_loader.js` me `!document.getElementById(
+   'liveweather-tab')` guard bhi maujood hai -- koi duplicate ban hi
+   nahi raha. Kuch karne ki zaroorat nahi.
