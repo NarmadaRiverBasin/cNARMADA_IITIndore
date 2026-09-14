@@ -93,10 +93,37 @@
     return String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
+  // Read the master <select>s directly rather than trusting
+  // getCurrentSelection() alone. Caught live on the deployed site: picking a
+  // block set #blockSelect.value synchronously, but national_selector.js's
+  // internal `current.block` (what getCurrentSelection() reports) only
+  // caught up after its boundary fetch resolved. The poll below therefore
+  // compared an unchanged signature and never re-rendered, leaving the
+  // caption reading "District-level rainfall for Jabalpur." with the block
+  // clause missing -- i.e. the exact unlabelled state this file exists to
+  // prevent, reintroduced by a race. The DOM selects are authoritative and
+  // synchronous, and are what village_report.js's readContext() reads too,
+  // so both modules now agree by construction. getCurrentSelection() is
+  // still consulted as a fallback for anything the DOM cannot answer.
   function sel() {
-    return (typeof window.getCurrentSelection === 'function')
+    var ss = el('stateSelect'), ds = el('districtSelect'),
+        bs = el('blockSelect'), vs = el('villageSelect');
+    var fallback = (typeof window.getCurrentSelection === 'function')
       ? window.getCurrentSelection()
-      : { state: null, district: null, block: null, village: null };
+      : {};
+    var villageName = null;
+    if (vs && vs.value && vs.selectedIndex >= 0) {
+      var opt = vs.options[vs.selectedIndex];
+      // #villageSelect carries the LGD code as its value; the human name is
+      // the option label (same convention village_report.js relies on).
+      villageName = opt ? opt.textContent.trim() : null;
+    }
+    return {
+      state:    (ss && ss.value) || fallback.state || null,
+      district: (ds && ds.value) || fallback.district || null,
+      block:    (bs && bs.value) || fallback.block || null,
+      village:  villageName || fallback.village || null
+    };
   }
 
   // A chart counts as "showing something" only if Chart.js has a live
