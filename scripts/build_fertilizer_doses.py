@@ -1,7 +1,11 @@
 """Build dashboard/data/fertilizer_doses.json from verified page citations."""
 import json, datetime, pathlib
 
-ROOT = pathlib.Path("/Users/science/Documents/vindhya-climate-portal/.claude/worktrees/agent-a88e0b07ce6f35d24")
+# Was hardcoded to the worktree path this script was originally written in
+# (.claude/worktrees/agent-a88e0b07ce6f35d24, since cleaned up and deleted) --
+# fixed to resolve relative to this file's own location so it works from
+# any checkout.
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 SRC = {
     "title": "Crop Production Guide - Agriculture 2020",

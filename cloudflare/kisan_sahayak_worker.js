@@ -87,7 +87,7 @@
 // (`cd dashboard && python -m http.server 8000`) so this Worker is testable
 // without deploying a second copy for local work.
 const ALLOWED_ORIGINS = new Set([
-  'https://vindhyaresearch25-a11y.github.io',
+  'https://narmadariverbasin.github.io', // repo moved 2026-09 from vindhyaresearch25-a11y/vindhya-climate-portal to NarmadaRiverBasin/cNARMADA_IITIndore
   'http://localhost:8000',
   'http://127.0.0.1:8000',
 ]);
@@ -122,7 +122,7 @@ const EMBEDDING_DIMENSIONS = 768;
 // fetches this session (200 OK on mp_climate_data.json, mandi_prices.json,
 // a crop_stats_des_by_district file, a climate/<state>/<district>.json
 // file, and the HF village_profiles file, 2026-08-08).
-const GH_PAGES_BASE = 'https://vindhyaresearch25-a11y.github.io/vindhya-climate-portal/dashboard/data/';
+const GH_PAGES_BASE = 'https://narmadariverbasin.github.io/cNARMADA_IITIndore/dashboard/data/'; // repo moved 2026-09 from vindhyaresearch25-a11y/vindhya-climate-portal
 const HF_DATA_BASE = 'https://huggingface.co/datasets/vindhyaresearch/vindhya-climate/resolve/main/';
 
 // The 5 districts with real IMD-derived data in mp_climate_data.json (see

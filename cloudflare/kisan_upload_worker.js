@@ -57,7 +57,7 @@
  * the previous day's.
  */
 
-const ALLOWED_ORIGIN = 'https://vindhyaresearch25-a11y.github.io';
+const ALLOWED_ORIGIN = 'https://narmadariverbasin.github.io'; // repo moved 2026-09 from vindhyaresearch25-a11y/vindhya-climate-portal to NarmadaRiverBasin/cNARMADA_IITIndore
 const DAILY_LIMIT_PER_IP = 20;
 // India's real bounding box (generous -- includes Andaman & Nicobar,
 // Lakshadweep) -- anything outside this is rejected outright per B4
