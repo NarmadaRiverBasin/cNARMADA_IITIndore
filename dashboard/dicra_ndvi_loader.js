@@ -32,7 +32,22 @@
     // district outside DiCRA's 52 -- national_ndvi_loader.js may still
     // fill the separate #national-ndvi-panel below with real GEE/MODIS
     // NDVI for those, but this canvas itself needs its own honest state.
-    if (!series) { setNdviEmpty(true); return; }
+    if (!series) {
+      // AUDIT_FIX_PROMPT.md item 0C part 2 (2026-09-14), caught live:
+      // showing the empty overlay was not enough. The overlay is
+      // position:absolute over the canvas, so the PREVIOUS district's Chart
+      // instance survived underneath it -- selecting Madhya Pradesh ->
+      // Jabalpur and then Uttar Pradesh -> Agra left
+      // Chart.getChart('chartNdvi') still holding a live 278-point series
+      // labelled "NDVI JABALPUR" while the breadcrumb read Agra. That is
+      // stale data from a previous selection surviving on screen, which
+      // CLAUDE.md STANDING ORDERS #2 forbids outright, and anything reading
+      // the canvas back (the level caption, PDF/Excel export) would
+      // faithfully report Jabalpur's numbers under Agra's name. Destroy it.
+      try { killChart('chartNdvi'); } catch (e) { console.warn('[dicra_ndvi] killChart:', e); }
+      setNdviEmpty(true);
+      return;
+    }
     if (typeof Chart === 'undefined') return;
     setNdviEmpty(false);
 

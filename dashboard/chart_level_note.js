@@ -135,6 +135,18 @@
     var c;
     try { c = Chart.getChart(canvasId); } catch (e) { return null; }
     if (!c || !c.data || !c.data.datasets || !c.data.datasets.length) return null;
+    // Defence in depth, added after a live catch: dicra_ndvi_loader.js used
+    // to leave the PREVIOUS district's Chart instance alive under the
+    // .chart-empty overlay when the newly-selected district had no DiCRA
+    // series, and this caption dutifully labelled Jabalpur's 278-point
+    // series "District-level NDVI for Agra". That loader now destroys the
+    // chart (root cause fixed), but a caption that can assert a district
+    // name must never depend on another module getting its teardown right:
+    // if the pane is showing its own empty-state overlay, there is nothing
+    // legitimately charted here, whatever Chart.js still holds.
+    var wrap = c.canvas && c.canvas.closest ? c.canvas.closest('.chart-wrap') : null;
+    var overlay = wrap ? wrap.querySelector('.chart-empty') : null;
+    if (overlay && getComputedStyle(overlay).display !== 'none' && overlay.offsetHeight > 0) return null;
     var any = c.data.datasets.some(function (ds) {
       return (ds.data || []).some(function (v) {
         if (v == null) return false;
