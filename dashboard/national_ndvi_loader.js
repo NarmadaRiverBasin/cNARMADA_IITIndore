@@ -129,10 +129,27 @@
     }
     // AUDIT_FIX_PROMPT.md item 9: real content is showing below (this
     // panel), not in the #chartNdvi canvas above it (that's DiCRA-only) --
-    // hide that canvas's own "select a district" message so the two don't
-    // both claim empty/full at once.
+    // that canvas's own "select a district" message would be wrong here.
+    //
+    // 2026-09-14 (item 0C part 2): it used to be hidden outright, which,
+    // now that the stale chart is correctly destroyed, leaves the "NDVI
+    // TIME SERIES (DICRA 2013-2026)" heading sitting above an empty gap --
+    // a blank area, which item 0B/9 rules out. Rather than hide it, say
+    // the true thing and point down at the real data: DiCRA simply does
+    // not cover this district, and this district's own MODIS/GEE NDVI is
+    // in the panel below.
     var emptyEl = document.getElementById('empty-chartNdvi');
-    if (emptyEl) emptyEl.style.display = 'none';
+    if (emptyEl) {
+      var span = emptyEl.querySelector('span');
+      if (span) {
+        span.textContent = 'UNDP DiCRA covers Madhya Pradesh\'s 52 districts only, so there is no '
+          + 'DiCRA series for ' + districtName + '. This district\'s own real MODIS NDVI '
+          + '(MOD13Q1 via Google Earth Engine) is shown below — the two are never merged.';
+      }
+      var btn = emptyEl.querySelector('.btm-pane-empty-btn');
+      if (btn) btn.style.display = 'none';
+      emptyEl.style.display = 'flex';
+    }
   }
 
   // AUDIT_FIX_PROMPT.md item 0C part 2 (2026-09-14), caught live on the
@@ -162,7 +179,17 @@
     var hasRealChart = (typeof Chart !== 'undefined' && Chart.getChart) ? !!Chart.getChart('chartNdvi') : false;
     if (!hasRealChart) {
       var emptyEl = document.getElementById('empty-chartNdvi');
-      if (emptyEl) emptyEl.style.display = 'flex';
+      if (emptyEl) {
+        // applyGeeNdvi() rewrites this message and hides its "Select
+        // district" button for the GEE-NDVI case; restore both here so a
+        // later selection that really does need the original prompt gets
+        // it back instead of inheriting the previous district's wording.
+        var span0 = emptyEl.querySelector('span');
+        if (span0) span0.textContent = 'Select a district to see its NDVI time series.';
+        var btn0 = emptyEl.querySelector('.btm-pane-empty-btn');
+        if (btn0) btn0.style.display = '';
+        emptyEl.style.display = 'flex';
+      }
     }
   }
 

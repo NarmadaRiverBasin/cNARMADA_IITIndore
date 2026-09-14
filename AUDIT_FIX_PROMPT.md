@@ -737,3 +737,156 @@ number hai.
    `live_weather_loader.js` me `!document.getElementById(
    'liveweather-tab')` guard bhi maujood hai -- koi duplicate ban hi
    nahi raha. Kuch karne ki zaroorat nahi.
+
+
+---
+
+# 22. RE-AUDIT (2026-09-14, second pass) -- item 7b + item 0C part 2 CLOSED
+
+Picked up the two items section 21 left open ("Abhi bhi khula"). Same
+rule as that entry: everything below was checked on the LIVE deployed
+site with the browser, not by reading code. Where I was wrong, or where a
+fix of mine failed, it is written here rather than quietly corrected.
+
+**Note on the URL:** the repo moved mid-task to
+`NarmadaRiverBasin/cNARMADA_IITIndore`; live site is now
+https://narmadariverbasin.github.io/cNARMADA_IITIndore/dashboard/index.html
+(the old Pages URL 404s).
+
+---
+
+### Item 7b -- **HUA**, but two of the four were misdiagnosed in section 21
+
+Section 21 listed Mandi Prices, Horticulture, Village Intelligence and
+Agriculture as "abhi bhi table/text-first". Checked all four live first.
+Only **two** were genuinely chart-less:
+
+| Tab | Section 21 said | What was actually true, live | Done |
+|---|---|---|---|
+| **Horticulture** | table/text-first | **Correct.** 5 category tables, 0 canvases | Added a real multi-year line chart: top 6 crops by the latest year's AREA, plotted across the source's own `years_covered`. MP: Coriander/Onion/Garlic/Potato/Mandarin Orange/Peas over 2019-20..2022-23. Headline is real: "Coriander production up 8.3% -- 3,94,760 -> 4,27,690 tonnes", cross-checked against `horticulture_stats/madhya_pradesh.json` (+8.34%). A crop-year the source does not publish is left as a gap (`spanGaps:false`), never bridged |
+| **Agriculture** | table/text-first | **Correct.** metric cards + advisory text, 0 canvases | Added a dual-axis chart of the district's own real IMD record: `annual_rain_mm` bars + `spi_12` line, 2000-2024, from `mp_climate_data.json .districts.<d>.annual`. Headline: "2024 rainfall 1429 mm -- 4% above the 2000-2024 mean of 1369 mm"; the 1369 matches the pane's own RAINFALL card |
+| **Mandi Prices** | table/text-first | **WRONG -- it already had a real bar chart above its table.** Section 21 judged it on Jabalpur, which genuinely has no AGMARKNET arrivals that day, so the honest "no arrivals" note was mistaken for a missing chart. Confirmed with **Agra (UP)**: 10 real price rows, chart present | What WAS missing is 7b's own checklist -- it opted out of the shared `chartOpts()`, and had no axis titles and no headline. Rebuilt on `chartOpts()`, switched to horizontal bars (names were rotated 45 deg and colliding), added both axis titles + a real headline (highest modal price published today + commodity/market counts) |
+| **Village Intelligence** | table/text-first | **WRONG -- `village_report.js` has three real charts** (land use, crop trend, NDVI). But opening the tab with a location already chosen landed on the idle "...then press **View Report**" card, so the charts were one unnecessary click away and the pane read as text | Now auto-renders once a real district is selected. Still gated on a district: with only a State picked there is no village record to report on, so the idle card stays |
+
+Measured live at MP/Jabalpur after the fix: Horticulture 852x200 chart,
+Agriculture 864x200, Village Intelligence 2 charts auto-rendered at
+district tier (3 with a village selected), Mandi 1 chart at UP/Agra.
+
+Left as text **on purpose** (reference/method panels, not data views, as
+section 21 already judged): GEE Workflow, Projection Method, API Hub,
+AOI Polygon.
+
+---
+
+### Item 0C part 2 (block/village star) -- **HUA**
+
+Section 21 said this was "AADHA" and that block/village NDVI/Rainfall
+cross-check was baaki. It was, and there was a real bug there.
+
+**Reproduced first.** MP -> Jabalpur -> block Sihora -> village Agariya,
+reading the live Chart.js instances:
+
+| Level | chartRain first 3 pts | chartNdvi |
+|---|---|---|
+| district | 183 / 441.9 / 394.4 | 278 pts "NDVI JABALPUR" |
+| block | 183 / 441.9 / 394.4 | 278 pts "NDVI JABALPUR" |
+| village | 183 / 441.9 / 394.4 | 278 pts "NDVI JABALPUR" |
+
+Byte-identical at all three levels with **nothing on screen saying the
+numbers were the district's**. The right-panel Climate Metrics cards were
+already correct (that half was verified in section 21) -- only the four
+bottom chart panes were missed.
+
+**Fixed** with a new `dashboard/chart_level_note.js` caption under
+Rainfall / Temperature / Trends / NDVI Trend that states (a) the level of
+the series actually drawn, (b) the specific reason a deeper level has
+none, (c) the real village value where one exists, and (d) the
+`source · resolution · year` line these four panes never had.
+
+Live results, all four levels, MP -> Jabalpur -> Sihora -> Simariya:
+
+| Level | What the four panes now say |
+|---|---|
+| **State** (MP only) | No chart drawn; caption correctly **empty** so the pane's own honest message shows ("a per-district time series chart needs a district..."). State aggregate panel shows "mean of 52 of 52 real districts" |
+| **District** (Jabalpur) | "District-level rainfall for Jabalpur." + source/resolution/years. All 4 charts real (rain 12 monthly pts, temp 12, trends 25 yrs, NDVI 278) |
+| **Block** (Sihora) | "Chart shows district-level rainfall for Jabalpur -- no block-specific rainfall series exists in this project. The IMD series here is aggregated per district; block tier has no climate source of its own." NDVI gives the DiCRA-specific reason (district zonal mean over MODIS 250 m pixels; no block/village NDVI is computed anywhere here) |
+| **Village** (Simariya) | Same district-level statement, **plus the real village number**: "Simariya does have its own real village-level IMD reading (annual rainfall 1293 mm, 2000-2024 mean) -- a single value per village, not a series, so it cannot be charted above." 1293 mm matches the VILLAGE INDICES panel and the right panel's Rainfall Departure exactly. NDVI says plainly that **no village-level NDVI value exists to show instead**, rather than borrowing the district's |
+
+**Dropdown vs map parity (STANDING ORDERS #2):** verified, not assumed.
+`selectVillage(vilLgd, fromMap)` sets `#villageSelect.value` on BOTH
+paths, and the caption reads that select -- so the two cannot diverge by
+construction. Exercised empirically too: invoking the map's own internal
+`selectBlock('Patan')` **without touching the dropdown** set
+`#blockSelect` to Patan and the caption picked up the block clause
+identically.
+
+**Second state checked** (to prove this isn't MP-special-cased): UP ->
+Agra. Rain/Temp/Trends correctly draw nothing (GEE districts have a
+single 2000-2024 aggregate, no chartable series) and the caption
+correctly stays empty so the pane's own message speaks.
+
+---
+
+### Three of my own mistakes during this pass, written down
+
+1. **My caption mislabelled a stale chart.** The UP/Agra check found
+   `chartNdvi` still holding Jabalpur's 278-point series while Agra was
+   selected -- a pre-existing stale-data bug (STANDING ORDERS #2) --
+   and my new caption dutifully labelled it "District-level NDVI for
+   **Agra**". A module that asserts a district name must not trust
+   `Chart.getChart()` as proof that something legitimate is drawn; it now
+   also treats a visible `.chart-empty` overlay as "nothing charted here".
+
+2. **A selection race hid the block/village clause.** The caption first
+   read the selection only from `getCurrentSelection()`, whose internal
+   `current.block` lags `#blockSelect.value` until a boundary fetch
+   resolves -- so the poll saw an unchanged signature and the block
+   clause never appeared live (it was correct when refresh() was called
+   by hand, which is what localised it). Now reads the master `<select>`s
+   directly, the same source `village_report.js`'s `readContext()` uses.
+
+3. **I "fixed" the stale NDVI chart twice without it working.** First in
+   `dicra_ndvi_loader.js`'s `renderNdviChart()` -- only ever reachable
+   for the 5 `mp_climate_data.json` districts, so dead code on the
+   failing path. Then in `national_ndvi_loader.js`'s
+   `handleDistrictChange()` -- which, measured live,
+   **was never running at all**: that file installs it by wrapping
+   `window.onDistrictChange`, a single-slot assignment that a
+   later-booting module had overwritten
+   (`String(window.onDistrictChange).length` = 59, no reference to it).
+   Bound with a real `addEventListener` on `#districtSelect` instead
+   (listeners accumulate, assignments clobber). The same clobbering means
+   this file's GEE NDVI panel for non-DiCRA districts was likely not
+   updating either.
+
+---
+
+### Item raised by the owner mid-pass: "MP ke sabhi 55 district nahi dikh rahe" -- **CONFIRMED REAL, not fixable here**
+
+`data/boundaries/soi/districts.geojson` carries **52** MP districts; MP
+officially has **55**. The three absent are exactly the three created in
+2023, after this SoI/NWDP product's vintage:
+
+| District | Carved from | Notified |
+|---|---|---|
+| Mauganj | Rewa | 15 Aug 2023 |
+| Pandhurna | Chhindwara | 5 Oct 2023 |
+| Maihar | Satna | 5 Oct 2023 |
+
+Verified inside this repo's own data rather than just asserted: each is
+present as a **tehsil of its parent district** (`Maihar` in
+`soil_moisture/madhya_pradesh/satna.json`, `Mauganj` in `rewa.json`,
+`Pandhurna` in `chhindwara.json`). Their territory and villages are all
+there -- still filed under the parent, exactly as the source says. The
+UI's "52 of 52 real districts" is honest about what it has; the universe
+itself is one vintage behind.
+
+**Deliberately NOT "fixed".** Splitting Rewa/Satna/Chhindwara would mean
+drawing boundaries no official source here publishes and re-attributing
+climate/NDVI/crop numbers between parent and child -- fabrication twice
+over. Recorded in `docs/DATA_SOURCES.md` ("Administrative vintage of the
+Survey of India district layer") as **pending official source**: needs an
+NWDP check (STANDING ORDERS #3) and an owner decision before re-cutting
+the HF-hosted boundary set, since re-cutting districts also re-cuts the
+block/village slices keyed to them (STANDING ORDERS #8 -- not deciding
+alone).
