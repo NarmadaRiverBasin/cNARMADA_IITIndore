@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoAI Crop Insurance Validation Dashboard -- SIMULATED DATA</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root{
+    --ink:#101a24; --ink-2:#33465a; --dim:#64798e; --line:#dfe6ee;
+    --bg:#eef2f6; --card:#ffffff;
+    --brand:#0d5c63; --brand-2:#12868f; --brand-ink:#083c41;
+    --syn:#8a2f00; --syn-bg:#fff1e6; --syn-line:#e0873f;
+    --ok:#1a6b3c; --ok-bg:#e6f4ec;
+    --warn:#8a6100; --warn-bg:#fff6e0;
+    --bad:#96231f; --bad-bg:#fdecec;
+    --cad:#6b4f2a; --cad-bg:#f7f2e8;
+    --shadow:0 1px 2px rgba(16,26,36,.06),0 4px 14px rgba(16,26,36,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.45;}
+  h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:-.01em;}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  a{color:var(--brand-ink);}
+
+  #synBanner{position:sticky;top:0;z-index:6000;background:var(--syn-bg);
+    border-bottom:2px solid var(--syn-line);color:var(--syn);
+    padding:7px 16px;font-size:12.5px;font-weight:800;text-align:center;
+    display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+  #synBanner .pill{background:var(--syn);color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;letter-spacing:.04em;}
+
+  header.page{padding:14px 22px 8px;max-width:1760px;margin:0 auto;}
+  header.page .back{font-size:12px;color:var(--brand-ink);text-decoration:none;font-weight:600;}
+  header.page h1{font-size:21px;color:var(--brand-ink);margin:6px 0 4px;}
+  header.page .positioning{font-size:13px;color:var(--ink-2);max-width:1100px;}
+  header.page .positioning b{color:var(--brand);}
+
+  /* ---- core principle strip ---- */
+  .principle{max-width:1760px;margin:10px auto 0;padding:0 22px;}
+  .principle .inner{background:var(--cad-bg);border:1px solid #e3d7bf;border-left:4px solid var(--cad);
+    border-radius:8px;padding:9px 13px;font-size:12.5px;color:#4a3a20;line-height:1.55;}
+  .principle b{color:#6b4f2a;}
+
+  /* ---- toolbar ---- */
+  .toolbar{max-width:1760px;margin:12px auto 0;padding:0 22px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .fld{display:flex;flex-direction:column;gap:4px;min-width:190px;}
+  .fld label{font-size:10.5px;font-weight:800;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;}
+  .fld select{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;
+    font-size:13px;color:var(--ink);min-width:190px;}
+  .fld select:disabled{background:#f3f6f9;color:#9fb0c0;}
+  .btn{padding:8px 15px;border:none;border-radius:6px;background:var(--brand);color:#fff;
+    font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:var(--shadow);}
+  .btn:hover{background:var(--brand-2);}
+  .btn.ghost{background:#fff;color:var(--brand-ink);border:1px solid var(--line);}
+  .btn:disabled{background:#c3ced8;cursor:not-allowed;}
+  .coverage{font-size:11.5px;color:var(--dim);padding-bottom:7px;}
+
+  /* ---- layout ---- */
+  .wrap{max-width:1760px;margin:14px auto 40px;padding:0 22px;display:grid;
+    grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start;}
+  @media (max-width:1150px){ .wrap{grid-template-columns:minmax(0,1fr);} }
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
+  .card > h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-ink);
+    padding:10px 14px;border-bottom:1px solid var(--line);background:#f8fafc;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .card .body{padding:13px 14px;}
+  .card .body.tight{padding:9px 14px 12px;}
+
+  .tag{font-size:10px;font-weight:800;letter-spacing:.05em;border-radius:20px;padding:2px 9px;text-transform:uppercase;}
+  .tag.syn{background:var(--syn-bg);color:var(--syn);border:1px solid var(--syn-line);}
+  .tag.ref{background:var(--cad-bg);color:var(--cad);border:1px solid #e3d7bf;}
+  .tag.ai{background:#eaf3ff;color:#14508f;border:1px solid #b9d5f5;}
+  .tag.ok{background:var(--ok-bg);color:var(--ok);}
+  .tag.warn{background:var(--warn-bg);color:var(--warn);}
+  .tag.bad{background:var(--bad-bg);color:var(--bad);}
+
+  /* map */
+  #map{height:560px;width:100%;background:var(--cad-bg);}
+  .maptools{display:flex;gap:6px;flex-wrap:wrap;padding:9px 14px;border-bottom:1px solid var(--line);background:#fbfcfd;}
+  .maptools button{font-size:11.5px;padding:5px 10px;border:1px solid var(--line);background:#fff;
+    border-radius:5px;cursor:pointer;color:var(--ink-2);font-weight:600;}
+  .maptools button.on{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .khasra-label{font-size:10px;font-weight:700;color:#5b4526;background:rgba(255,255,255,.78);
+    border:1px solid #d9c9a8;border-radius:3px;padding:0 3px;white-space:nowrap;}
+  .maplegend{display:flex;gap:12px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line);
+    background:#fbfcfd;font-size:11.5px;color:var(--ink-2);}
+  .maplegend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+
+  /* metric rows */
+  .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:13px;}
+  .kv .k{color:var(--ink-2);}
+  .kv .v{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;}
+  .kv .row{display:contents;}
+  .kv .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:5px 0;}
+
+  .big{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .big .b{flex:1 1 130px;border:1px solid var(--line);border-radius:7px;padding:9px 11px;background:#fcfdfe;}
+  .big .b .lab{font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--dim);text-transform:uppercase;}
+  .big .b .val{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px;}
+  .big .b .sub{font-size:11px;color:var(--dim);margin-top:1px;}
+  .big .b.hero{background:#f2fbf6;border-color:#bfe3cf;}
+  .big .b.refbox{background:var(--cad-bg);border-color:#e3d7bf;}
+
+  table.t{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.t th{text-align:left;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);
+    padding:5px 6px;border-bottom:1px solid var(--line);font-weight:800;}
+  table.t td{padding:5px 6px;border-bottom:1px solid #eef2f6;vertical-align:top;}
+  table.t td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
+  table.t tr.total td{font-weight:800;border-top:2px solid var(--line);background:#f8fafc;}
+
+  .note{font-size:11.5px;color:var(--dim);line-height:1.6;margin-top:9px;
+    border-top:1px solid var(--line);padding-top:8px;}
+  .empty{padding:36px 20px;text-align:center;color:var(--dim);font-size:13px;}
+  .empty b{display:block;color:var(--ink-2);margin-bottom:5px;font-size:14px;}
+  .chartbox{height:170px;position:relative;}
+
+  /* report modal */
+  #reportModal{position:fixed;inset:0;background:rgba(10,18,26,.55);z-index:7000;display:none;
+    padding:26px;overflow:auto;}
+  #reportModal.open{display:block;}
+  .report{max-width:900px;margin:0 auto;background:#fff;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .report .rhead{padding:16px 22px;border-bottom:2px solid var(--brand);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .report .rbody{padding:18px 22px 26px;}
+  .report h2{font-size:17px;color:var(--brand-ink);}
+  .report .sec{margin-top:15px;}
+  .report .sec h4{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--brand);
+    border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:7px;}
+  @media print{
+    body > *:not(#reportModal){display:none!important;}
+    #reportModal{position:static;background:#fff;padding:0;display:block!important;}
+    .report{box-shadow:none;max-width:none;}
+    .noprint{display:none!important;}
+  }
+</style>
+</head>
+<body>
+
+<div id="synBanner">
+  <span class="pill">SYNTHETIC</span>
+  <span>Every farmer, parcel, girdawari entry, satellite observation, hazard event, loss figure and claim value on this page is <b>SIMULATED</b> for a research pilot &mdash; not a real land record and not an official PMFBY determination.</span>
+</div>
+
+<header class="page">
+  <a class="back" href="../index.html#dashboard">&larr; VINDHYA Dashboard</a>
+  &nbsp;·&nbsp;
+  <a class="back" href="pilot_study.html">100-Farmer Pilot Study</a>
+  &nbsp;·&nbsp;
+  <a class="back" href="index.html">8-Module Prototype</a>
+  <h1>GeoAI Crop Insurance Validation Dashboard</h1>
+  <div class="positioning">
+    Officer-side validation workflow: pick a farmer, see their cadastral parcel on the village map, and validate the
+    claim against <b>the actual cultivated area detected by GeoAI</b> rather than the recorded Khasra area.
+  </div>
+</header>
+
+<div class="principle">
+  <div class="inner">
+    <b>Core principle.</b> The cadastral / Khasra boundary is used <b>only</b> to locate the parcel and link it to the
+    land record. Every crop, cultivated-area, loss, yield and insurance figure below is computed from the
+    <b>GeoAI-validated actual cultivated area</b> &mdash; never from the cadastral area. Where the two differ, both are
+    shown side by side so the difference is auditable.
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="fld">
+    <label for="selDistrict">District</label>
+    <select id="selDistrict"><option value="">-- Select district --</option></select>
+  </div>
+  <div class="fld">
+    <label for="selVillage">Village</label>
+    <select id="selVillage" disabled><option value="">-- Select district first --</option></select>
+  </div>
+  <div class="fld" style="min-width:260px">
+    <label for="selFarmer">Farmer (ID &middot; name &middot; khasra)</label>
+    <select id="selFarmer" disabled style="min-width:260px"><option value="">-- Select village first --</option></select>
+  </div>
+  <button class="btn" id="btnReport" disabled>Generate Validation Report</button>
+  <button class="btn ghost" id="btnClear">Clear</button>
+  <div class="coverage" id="coverage"></div>
+</div>
+
+<div class="wrap">
+  <!-- ============ LEFT: GIS ============ -->
+  <div>
+    <div class="card">
+      <h3>Cadastral &amp; GeoAI Parcel Map <span class="tag ref">Khasra = spatial reference</span>
+        <span class="tag syn">synthetic parcels</span></h3>
+      <div class="maptools">
+        <button id="btnBaseCad" class="on">Cadastral sheet</button>
+        <button id="btnBaseSat">Satellite</button>
+        <button id="btnLyrKhasra" class="on">Khasra numbers</button>
+        <button id="btnLyrComp" class="on">Land-use split</button>
+        <button id="btnZoomVillage">Zoom to village</button>
+        <button id="btnZoomParcel" disabled>Zoom to parcel</button>
+      </div>
+      <div id="map"></div>
+      <div class="maplegend">
+        <span><i style="background:#2f7d4f"></i>Cultivated (GeoAI)</span>
+        <span><i style="background:#a9803f"></i>Bund</span>
+        <span><i style="background:#cbb994"></i>Fallow</span>
+        <span><i style="background:#9aa7b2"></i>Farm road</span>
+        <span><i style="background:#3d7ea6"></i>Water body</span>
+        <span><i style="background:#7a6a55"></i>Other non-crop</span>
+        <span><i style="background:transparent;border:2px solid #b3341f"></i>Selected parcel</span>
+        <span><i style="background:transparent;border:2px solid #0d5c63"></i>Village boundary (real SoI)</span>
+      </div>
+    </div>
+
+    <div class="card" id="cardIntegrated">
+      <h3>Integrated Validation View</h3>
+      <div class="body" id="integratedBody">
+        <div class="empty"><b>No farmer selected</b>Pick District &rarr; Village &rarr; Farmer above.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RIGHT: PANELS ============ -->
+  <div>
+    <div class="card">
+      <h3>1 &middot; Parcel &amp; Land Record <span class="tag ref">reference only</span></h3>
+      <div class="body" id="panelParcel"><div class="empty"><b>No farmer selected</b>Choose a farmer to begin validation.</div></div>
+    </div>
+
+    <div class="card">
+      <h3>2 &middot; Actual Cultivated Area <span class="tag ai">GeoAI</span></h3>
+      <div class="body" id="panelArea"><div class="empty">&mdash;</div></div>
+    </div>
+
+    <div class="card">
+      <h3>3 &middot; Land-Use Assessment</h3>
+      <div class="body" id="panelLandUse"><div class="empty">&mdash;</div></div>
+    </div>
+
+    <div class="card">
+      <h3>4 &middot; Crop &amp; Hazard Intelligence</h3>
+      <div class="body" id="panelHazard"><div class="empty">&mdash;</div></div>
+    </div>
+
+    <div class="card">
+      <h3>5 &middot; Crop Loss &amp; Yield</h3>
+      <div class="body" id="panelLoss"><div class="empty">&mdash;</div></div>
+    </div>
+
+    <div class="card">
+      <h3>6 &middot; Insurance &amp; Scheme Assessment <span class="tag syn">synthetic policy</span></h3>
+      <div class="body" id="panelInsurance"><div class="empty">&mdash;</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="reportModal">
+  <div class="report">
+    <div class="rhead">
+      <div>
+        <h2>Crop Insurance Validation Report</h2>
+        <div style="font-size:12px;color:#64798e" id="repSub"></div>
+      </div>
+      <div class="noprint" style="display:flex;gap:8px">
+        <button class="btn" onclick="window.print()">Print / PDF</button>
+        <button class="btn ghost" id="btnCloseReport">Close</button>
+      </div>
+    </div>
+    <div class="rbody" id="reportBody"></div>
+  </div>
+</div>
+
+<script src="validation_dashboard.js"></script>
+</body>
+</html>
