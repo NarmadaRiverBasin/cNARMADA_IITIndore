@@ -599,3 +599,135 @@ item 5 ke mutabik).
 
 Har item ke saamne HUA / NAHI KIYA / kyun nahi likhna, screenshot ke
 bina "ho gaya" mat likhna.
+
+---
+
+# 0D. TEEN-ROLE LAYERED VIEW (spec + status, 2026-09-14)
+
+> **Note on where this spec came from (imaandaari):** is file me "0D"
+> naam ka koi section pehle se **nahi tha** -- poora repo `0D` /
+> `TEEN-ROLE` / `भूमिका` ke liye grep kiya, kahin nahi mila. Ye spec
+> owner ke 2026-09-14 ke task brief se jaisa ka taisa yahan likha gaya
+> hai, taaki aage se file aur code dono ek hi baat kahein.
+
+**Spec:** login ke baad `vindhya_visitor.role` padho aur default view
+badlo:
+- **Administration** -> aaj wala poora Dashboard, koi badlav nahi
+- **Farmer** -> ek combined panel: Farmer Advisory -> Agriculture
+  (auto-bhara climate summary + Mera Khet ka area-scaled fertilizer
+  card) -> Village Reports -> PMFBY Insurance; default bhasha Hindi,
+  bada font, aur "technical" tabs (GEE Workflow, Validation, API Hub)
+  ek saaf **"Advanced view दिखाएं"** toggle ke peeche
+- **Corporate** -> Mandi Prices -> Crop Statistics (business view)
+- Naksha, Location Selector, aur language toggle **teeno role me bilkul
+  ek jaise**
+- Header me hamesha **"भूमिका बदलें / Switch role"**, bina naam/
+  organization dobara maange
+- Kahin bhi "access denied" jaisa shabd nahi -- ye sirf UI
+  personalisation hai, permission system nahi; har panel har role se
+  khulta hai
+- Role localStorage me yaad rahe; wapas aane par role dobara na poochha
+  jaye
+
+### STATUS: **HUA -- LIVE VERIFIED (2026-09-14)**
+
+`dashboard/role_view.js` (naya) + `index.html` ka CSS/topbar/launchApp
+wiring + `app.py` ke `_JS_FILES` me entry. Live site par teeno role
+khud chala kar jaancha:
+
+| Role | Live natija |
+|---|---|
+| Farmer | `role-view-farmer lang-hi role-stack`, hash `#farmer`, 4 pane sahi kram me (advisory:1, agriculture:2, village:3, pmfby:4), GEE Workflow/API Hub/Validation `display:none`, "Advanced view दिखाएं" toggle maujood, font `--fs-3` 15px->17px, role button "किसान" |
+| Corporate | `role-view-corporate role-stack`, hash `#corporate`, Mandi Prices(1) -> Crop Statistics(2), technical tabs wapas visible, font wapas 15px, button "कॉर्पोरेट" |
+| Administration | koi stack nahi, bottom panel collapsed, hash `#dashboard`, button "प्रशासन" -- yaani aaj wala default jyon ka tyon |
+
+- **Switch role** topbar me hamesha dikhta hai; modal Hindi/English
+  dono me, upar saaf likha "सिर्फ़ यह बदलता है कि पहले कौन-सा पैनल
+  खुले। हर पैनल हर भूमिका में उपलब्ध रहता है।" -- koi access-denied
+  shabd kahin nahi.
+- **Naksha teeno role me same size** -- live measure: `map-panel`
+  height = 568px, teeno me.
+- **Wapas aane par**: hero par ab "जारी रखें / Continue as
+  &lt;Role&gt;" button aata hai aur stored role ka card pehle se selected --
+  role dobara nahi poochha jaata, naam dobara nahi maanga jaata.
+- `#farmer` / `#corporate` / `#admin` shareable deep-link hain (doosre
+  ka bheja link aapka apna saved role overwrite nahi karta).
+- Koi naya data nahi banaya gaya -- sirf routing/layout.
+
+**Is kaam ke dauraan do asli bug mile aur theek kiye:**
+1. **Load-order race** -- `index.html` apna router
+   `setTimeout(initRouting,0)` se chalata hai, jo `role_view.js` ke
+   `<script src>` (~2000 line neeche) se **pehle** chal sakta hai;
+   tab `launchApp()` ko `window.VindhyaRole` undefined milta tha aur
+   poora role view chupchaap skip ho jaata tha. Uncached load par
+   reproduce hua. Idempotent self-boot fallback lagaya.
+2. **`.climate-metrics-table .metric-card` ka grid** -- `1fr` ka matlab
+   `minmax(auto,1fr)` hota hai, isliye label column apne 140px
+   min-content se chhota hone se mana kar deta tha: label 140 + value
+   71 = 211px, jabki card sirf 195px ka hai -- value 16px bahar nikal
+   kar `#right-panel` ke 84px chat-FAB gutter me ghus jaati thi.
+   `minmax(0,1fr)` se har role aur har font-size par theek.
+
+---
+
+# 21. RE-AUDIT (2026-09-14) -- poori file, item-dar-item, LIVE
+
+Live site khud khol kar, browser se, har item jaancha (sirf code padh
+kar nahi). Jahan "measured" likha hai wahan asli DOM/computed-style
+number hai.
+
+| Item | Verdict | Sabooot / kyun |
+|---|---|---|
+| **0** page scroll | **HUA** | `docH 1021 > winH 835`, `html{overflow-y:auto}`, `html/body/#app/#main/#content` me kahin `position:fixed` ya `overflow:hidden` nahi |
+| **0B** 5 khali tab | **HUA** | Rainfall, Temperature, Drought Probability, Trends, NDVI Trend -- paanchon me asli Chart.js canvas render hota hai (>30x30px), koi khali nahi |
+| **0C** panel naksha ke neeche | **HUA** | bottom panel poori chaudai (966px) me, naksha se 20px neeche |
+| **0C** star-wise data | **AADHA** | Country->State->District->Block->Village hierarchy chalu hai (MP -> 53 zile -> 8 block); district-star par sab kuch update hota hai. Block/village star par NDVI/Rainfall ka poora cross-check **nahi** kiya -- imaandaari se adhoora likh raha hoon |
+| **1** dohrav | **HUA (ab poora)** | Sidebar 21 item, bottom strip me 17 **visible**. Jo 9 asli duplicate the -- Forest, PMFBY, Cadastral, Live Weather, Compare, Soil Moisture, Groundwater, Mera Khet -- sab `display:none`. "Drought" ab bottom me **"Drought Probability"**. Yaani 2026-08-16 wali "aadha hua" shikayat ab **poori tarah** theek hai |
+| **2** Max zoom 218 | **HUA** | naksha ke kone me "Max zoom z18" |
+| **3** grid lines | **HUA (regress nahi hui)** | satellite tiles saaf; tile size 256.5px (seam-overlap fix). Jo ek dashed cyan line dikhti hai wo app ki apni 5-point polyline hai, graticule nahi |
+| **4** khali jagah | **HUA (ab)** | Pehle: map-column 696px vs right-panel 1053px -> **357px** mara hua safed hissa. Ab right-panel sticky + ek viewport tak capped -> **gap 357px -> 83px**, page height 1155 -> 882. Farmer/Corporate view me gap **0** |
+| **5** climate side panel | **HUA** | Jabalpur chunne par saaf structure: heading, legend-strip, metric card, har card ke neeche `Source · resolution · saal` |
+| **6** overlap | **HUA** | saaron 17 tab kholkar measure kiya -- **kisi bhi pane me `clippedRight = 0`**, `scrollWidth == clientWidth` |
+| **7a** tab-list layout | **HUA** | patli scroll-column nahi; `flex-wrap` tile grid, 17 tab 3 row me, bagal khali nahi |
+| **7b** graphical | **AADHA** | 17 me se 8 tab me asli chart (Rainfall, Temperature, Drought Probability, Trends, NDVI Trend, 7-Day Forecast, Validation x2, Crop Statistics). GEE Workflow / Projection Method / API Hub / AOI Polygon / Farmer Advisory apne swabhav se text/tool panel hain. **Mandi Prices, Horticulture, Village Intelligence, Agriculture abhi bhi table/text-first hain -- ye baaki hai** |
+| **8** zila chune bina | **HUA** | khali safed page nahi; har tab me ek saaf card -- icon + sandesh + **usi card ke andar "ज़िला चुनें" button**. Naksha ka size tab badalne se nahi hilta (568px, teeno role me) |
+| **9** 16 tab auto-bhare | **HUA** | 17/17 tab par click karte hi active pane bharta hai (textLen 17-6246), koi khali nahi |
+| **10a** advisory me climate | **HUA** | Jabalpur chunte hi advisory pane 1826 char se bhar jaata hai |
+| **10b** fertilizer card | **HUA** | `#fert-rec-panel` 4676 char. **Chaaron mausam alag**: खरीफ (धान, 50:25:25 N:P2O5:K2O/ha, citation ke saath), रबी (गेहूँ), **ज़ायद/ग्रीष्म -- imaandaari se "is mausam me is zile ki kisi fasal ke liye uplabdh nahi"**, aur पूरे वर्ष (गन्ना). Area DES record se, Mera Khet se naapne par khet-wise |
+| **11** disclaimer/zoom overlap | **HUA** | disclaimer bottom-left, zoom control bottom-right -- alag |
+| **12** idle-state text | **HUA** | "Select a state" / "Select a village to view..." live regex se dhoondha -- **kahin nahi mila** |
+| **13** risk legend | **HUA** | naksha par floating panel nahi; Climate Metrics panel ke andar upar Extreme/High/Moderate/Low strip |
+| **14a** spacing | **HUA** | measured **20px** (spec: 16-24px) |
+| **14b** attractive empty-state | **HUA** | halka card, beech me icon, neeche sandesh, aur card ke andar hi "ज़िला चुनें" button |
+| **14c** click ke baad hi jagah | **HUA** | click se pehle `.btm-content{display:none}`, tab-strip ke neeche sirf **1px** |
+| **15a** advisory card kate hue | **HUA** | `scrollWidth == clientWidth == 880`, 0 clipped node (1470px width par jaancha) |
+| **15b** chat-FAB overlap | **HUA -- par pehle galat samjha tha** | Pehle mujhe laga ye regress ho gaya; **theek se jaancha to nahi tha** -- har scroll position par 16 metric node scan kiye, kahin overlap nahi. Lekin ek **asli latent bug** mila: `.metric-card` ka `1fr auto` grid apne card se 16px bahar nikal raha tha (value x=1433 vs gutter 1382) -- bade font par ye pakka overlap karta. `minmax(0,1fr)` se root cause theek |
+| **15c** URL hash | **HUA** | har tab/sidebar click par hash badalta hai; stacked role-view ke liye ek hi saaf hash (`#farmer`/`#corporate`) |
+| **15d** Historical Indices | **HUA** | `#historical-indices-panel` ab **316px** (shikayat ~100-150px ki thi), `overflow:visible`, koi chhupa hua inner scroll nahi |
+| **15e** Drought Risk stale text | **HUA** | Jabalpur chunne ke baad "Jabalpur · 2000-2024 mean / 16.2%" -- "Select a district" nahi |
+| **20** "Data sources" button overlap | **HUA** | ab koi floating button hai hi nahi (DOM me `data sources` sirf ek CSS comment me mila); site footer ke bottom-right me hai, "Projection Method"/"AOI Polygon" se door |
+
+### Item 1 ka maanga hua list -- kaunsi jodi asli duplicate thi
+
+| Bottom strip | Sidebar | Faisla |
+|---|---|---|
+| Rainfall | Rainfall Monitor | alag naam, ek hi pane -- rehne diya (owner ne khud "accha" kaha tha) |
+| Drought Probability | Drought | **pehle dono "Drought" the -> ab naam alag**, theek |
+| Forest | Forest Monitor | asli duplicate -> bottom se hataya |
+| PMFBY | PMFBY Insurance | asli duplicate -> bottom se hataya |
+| Cadastral | Cadastral Map | asli duplicate -> bottom se hataya |
+| Live Weather | Live Weather | asli duplicate -> bottom se hataya |
+| Compare | Compare | asli duplicate -> bottom se hataya |
+| Soil Moisture | Soil Moisture | asli duplicate -> bottom se hataya |
+| Farmer Advisory | (sidebar se hata diya gaya tha) | ab sirf ek jagah |
+| Mera Khet | मेरा खेत / Mera Khet | asli duplicate -> bottom se hataya |
+
+### Abhi bhi khula (imaandaari se)
+
+1. **Item 7b** -- Mandi Prices, Horticulture, Village Intelligence,
+   Agriculture abhi bhi table/text-first hain, chart-first nahi.
+2. **Item 0C (star-wise)** -- block aur village star par NDVI/Rainfall
+   ka poora cross-check baaki hai.
+3. **Chhota latent bug** -- `live_weather_loader.js` **do** "Live
+   Weather" tab node banata hai (dono hidden hain, isliye user ko
+   dikhta nahi, par saaf karna chahiye).
