@@ -110,9 +110,21 @@
    blind global replace risks the "layout stays exactly the same" rule.
    Tabular figures for numbers is already global (body{font-variant-
    numeric:tabular-nums} above), not part of this scale. */
---fs-1:11px;
---fs-2:13px;
---fs-3:15px;
+/* Owner report, twice (2026-09-14): "font size sab chote lag rahe hain ...
+   jaise pehle vindhya wale me tha waise rakho". Measured live first: the
+   --fs-* values had NOT been changed by any recent work (git -L on these
+   lines shows 11/13/15 unchanged for months), so there was no earlier,
+   larger state to literally restore -- the report is that the base scale
+   itself reads too small, which on a 1.8x-DPI screen with 11px tab labels
+   and 10px source lines is a fair call.
+   Bumped one step. This is deliberately kept at/below the Farmer role's
+   scale (12.5/15/17, see body.role-view-farmer below), which has already
+   been live-verified to render without clipping or overlap -- so this base
+   sits inside a range the layout is known to survive rather than being a
+   new, untested size. */
+--fs-1:12px;
+--fs-2:14px;
+--fs-3:16px;
 --fs-4:20px;
 --fs-5:28px;
 --fs-6:36px;
@@ -737,7 +749,7 @@ body{min-height:100%;background:var(--bg-deep);color:var(--text);font-family:'In
 .climate-metrics-table .metric-value{grid-column:2;grid-row:1 / span 3;text-align:right;align-self:center;font-size:var(--fs-3);}
 .climate-metrics-table .metric-bar{grid-column:1;grid-row:2;width:140px;max-width:100%;margin-top:var(--space-02);}
 .climate-metrics-table .metric-trend{grid-column:1;grid-row:3;margin-top:var(--space-02);}
-.climate-metrics-table .metric-source{grid-column:1 / -1;grid-row:4;border-top:none;padding-top:var(--space-02);font-size:10px;opacity:0.55;}
+.climate-metrics-table .metric-source{grid-column:1 / -1;grid-row:4;border-top:none;padding-top:var(--space-02);font-size:var(--fs-1);opacity:0.55;}
 .climate-metrics-table .u-metric-card-span2-cyan{grid-template-columns:1fr;border-left-color:var(--cyan);}
 .metric-card.hazard-highlight{border-color:var(--cyan)!important;background:rgba(26,138,158,0.04)!important;transform:translateY(-1px);}
 .hazard-tag{border-color:var(--cyan)!important;outline:2px solid rgba(26,138,158,0.3);}
@@ -1411,7 +1423,7 @@ body.mk-modal-open #pane-merakhet.active{
 .u-grid4-gap03{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-03);}
 .u-icon-18{width:18px;height:18px;}
 .u-logo-icon{width:36px;height:36px;flex-shrink:0;object-fit:contain;}
-.u-empty-note{font-size:10px;opacity:.7;margin-top:4px;line-height:1.5;}
+.u-empty-note{font-size:var(--fs-1);opacity:.7;margin-top:4px;line-height:1.5;}
 /* item 0C part 2: honest admin-level caption under the climate chart panes */
 .chart-level-note{font-size:var(--fs-1);line-height:1.6;opacity:.85;margin:var(--space-03) 0 var(--space-05);}
 .chart-level-note:empty{display:none;}
@@ -1435,10 +1447,10 @@ body.mk-modal-open #pane-merakhet.active{
 .fert-cond{color:var(--text-dim);}
 .fert-npk{color:var(--cyan);}
 .fert-field{color:var(--orange);}
-.fert-src{font-size:10px;color:var(--text-dim);opacity:.85;}
+.fert-src{font-size:var(--fs-1);color:var(--text-dim);opacity:.85;}
 .fert-none{font-size:var(--fs-1);color:var(--text-dim);padding:var(--space-04) 0;}
-.fert-missing{font-size:10px;color:var(--text-dim);opacity:.85;margin-top:var(--space-025);}
-.fert-caution{font-size:10px;color:var(--text-dim);border-top:1px solid var(--border);margin-top:var(--space-05);padding-top:var(--space-04);line-height:1.6;}
+.fert-missing{font-size:var(--fs-1);color:var(--text-dim);opacity:.85;margin-top:var(--space-025);}
+.fert-caution{font-size:var(--fs-1);color:var(--text-dim);border-top:1px solid var(--border);margin-top:var(--space-05);padding-top:var(--space-04);line-height:1.6;}
 .u-boundary-status{display:none;font-size:var(--fs-1);line-height:1.5;padding:0.4rem 0.5rem;margin-top:var(--space-03);background:rgba(26,138,158,0.08);border:1px solid rgba(26,138,158,0.25);border-radius:var(--radius-5);color:var(--text);}
 .u-advisory-box-cyan{background:rgba(26,138,158,0.08);border-left:3px solid var(--cyan);padding:0.4rem 0.5rem;border-radius:var(--radius-4);margin-bottom:var(--space-05);font-size:var(--fs-1);line-height:1.4;color:var(--text);}
 .u-demo-box{background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.35);border-radius:var(--radius-6);padding:0.5rem 0.7rem;margin:0.5rem 0.5rem 0;font-size:var(--fs-1);line-height:1.6;color:var(--text);}
