@@ -56,7 +56,11 @@ _JS_FILES = ['mp_climate_loader.js', 'dicra_ndvi_loader.js', 'cadastral_loader.j
              'advisory_loader.js', 'national_forecast_loader.js', 'groundwater_loader.js',
              # item 0D three-role layered view -- no data fetches of its own,
              # but its <script src> must still be inlined or it 404s here.
-             'role_view.js']
+             'role_view.js',
+             # item 0C part 2 -- reads the selection + live Chart.js
+             # instances only, no fetches of its own, but its <script src>
+             # must still be inlined here or it 404s on Streamlit.
+             'chart_level_note.js']
 
 
 def get_html_content():

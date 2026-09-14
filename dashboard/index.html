@@ -1412,6 +1412,10 @@ body.mk-modal-open #pane-merakhet.active{
 .u-icon-18{width:18px;height:18px;}
 .u-logo-icon{width:36px;height:36px;flex-shrink:0;object-fit:contain;}
 .u-empty-note{font-size:10px;opacity:.7;margin-top:4px;line-height:1.5;}
+/* item 0C part 2: honest admin-level caption under the climate chart panes */
+.chart-level-note{font-size:var(--fs-1);line-height:1.6;opacity:.85;margin:var(--space-03) 0 var(--space-05);}
+.chart-level-note:empty{display:none;}
+.chart-level-src{display:block;margin-top:2px;opacity:.75;}
 /* item 7b: Agriculture pane chart headline + source line */
 .u-agri-headline{font-size:var(--fs-2);font-weight:700;line-height:1.5;margin-bottom:var(--space-04);}
 .u-agri-headline:empty{display:none;}
@@ -5266,6 +5270,8 @@ async function runChatCompletion(){
 <script src="national_cmip6_loader.js"></script>
 <script src="fertilizer_loader.js"></script>
 <script src="role_view.js"></script>
+<!-- item 0C part 2: names the admin level of the 4 climate chart panes -->
+<script src="chart_level_note.js"></script>
 <!-- Village Profile & Agricultural Intelligence Report (owns #pane-village).
      Injects its own CSS and watches the pane's class itself, so this one
      line is the module's entire footprint in index.html. -->
