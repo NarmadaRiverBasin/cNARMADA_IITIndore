@@ -267,7 +267,7 @@
       }
       // No real per-block row for this block -- fall back to the district
       // mean, but say so, rather than silently showing it unlabeled.
-      return { value: file.district && file.district.sm_surface_mean, label: (districtName || '') + ' district mean · district-level estimate (no block-specific data)' };
+      return { value: file.district && file.district.sm_surface_mean, label: (districtName || '') + ' district mean (no block data)' };
     }
     return { value: file.district && file.district.sm_surface_mean, label: (districtName || '') + ' district mean (~9 km cells)' };
   }

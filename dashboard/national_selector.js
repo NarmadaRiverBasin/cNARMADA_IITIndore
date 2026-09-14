@@ -494,13 +494,21 @@
   // real source exists. Never fabricates a number itself -- only chooses
   // the honest words to put next to whatever the caller already decided to
   // show.
+  // Owner report 2026-09-14: this suffix's original wording ("district-level
+  // estimate (no village-specific data)") pushed every Climate Metrics card's
+  // trend line to 5-6 wrapped lines at the card's actual width, reading as
+  // "everything got smaller" even though the font-size itself never changed
+  // (verified live: still the same 11px --fs-1). Shortened while keeping the
+  // same honest meaning -- full detail is still in each card's own
+  // .metric-source citation line underneath, this is just the short inline
+  // flag next to the trend value.
   function climateLevelSuffix(hasSpecificData) {
     if (hasSpecificData) {
-      if (current.village) return ' · village-level (real reading)';
+      if (current.village) return ' · village-level';
       return '';
     }
-    if (current.village) return ' · district-level estimate (no village-specific data)';
-    if (current.block) return ' · district-level estimate (no block-specific data)';
+    if (current.village) return ' · district-level';
+    if (current.block) return ' · district-level';
     return '';
   }
   window.climateLevelSuffix = climateLevelSuffix;
