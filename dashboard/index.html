@@ -1198,6 +1198,30 @@ body.mk-modal-open #pane-merakhet.active{
    waste width on a phone. */
 @media(min-width:1024.02px){
   #right-panel{padding-right:84px;}
+  /* item 4 -- "KHALI JAGAH: naksha ke neeche". Measured live on the
+     deployed site (2026-09-14): #content is a flex row of .map-column
+     (696px) and #right-panel (1053px), so the row is 1053px tall and
+     357px of bare page background sits under the map column. THAT is the
+     owner's reported empty space -- nothing failed to load, the two
+     columns are simply different heights.
+     Filling it by expanding the bottom panel is not allowed (item 14c:
+     "click se pehle wahan koi khali reserved space na ho"), and growing
+     the map is not allowed either (item 8: the map's size must not
+     change). So bound the column that actually causes the overflow: the
+     metrics panel becomes a sticky side column at most one viewport
+     tall, which makes the flex row exactly as tall as .map-column and
+     the gap disappears -- and the panel now stays on screen while you
+     scroll instead of sliding away, which is strictly better than
+     before.
+     overflow-y:auto here is a real, visible scrollbar on a full-viewport
+     column -- NOT the hidden ~150px inner scroll item 15d objected to.
+     That panel (#historical-indices-panel) is untouched and still
+     renders its full 316px with overflow:visible.
+     Desktop only: at <=1024px #right-panel is already a full-width
+     stacked block (order:2) with no column beside it, so there is no gap
+     to close and a viewport cap would only hide content. */
+  #right-panel{align-self:flex-start;position:sticky;top:56px;
+    max-height:calc(100vh - 56px);overflow-y:auto;}
 }
 @media(max-width:768px){
   /* Phase B's sticky location bar (~60px) sits at the very bottom on
