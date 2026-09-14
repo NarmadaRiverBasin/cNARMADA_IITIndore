@@ -135,13 +135,30 @@
     if (emptyEl) emptyEl.style.display = 'none';
   }
 
+  // AUDIT_FIX_PROMPT.md item 0C part 2 (2026-09-14), caught live on the
+  // deployed site: #chartNdvi is DiCRA-only, and dicra_ndvi_loader.js only
+  // ever re-runs for the 5 districts mp_climate_loader.js covers -- so
+  // selecting Madhya Pradesh -> Jabalpur and then Uttar Pradesh -> Agra
+  // left Jabalpur's real 278-point DiCRA series alive in that canvas with
+  // Agra on the breadcrumb. Nothing was clearing it: the district is not a
+  // DiCRA district, so dicra_ndvi_loader.js's own handler never fires.
+  // Whenever the selected district is NOT a DiCRA district, any chart in
+  // this canvas can ONLY be a leftover from a previously-selected one.
+  function killStaleDicraChart() {
+    if (typeof Chart === 'undefined' || !Chart.getChart) return;
+    var c;
+    try { c = Chart.getChart('chartNdvi'); } catch (e) { return; }
+    if (c) { try { c.destroy(); } catch (e) {} }
+  }
+
   function clearNationalPanel() {
     var host = document.getElementById('national-ndvi-panel');
     if (host) host.classList.add('u-hidden');
-    // Only re-show the chart's empty state if dicra_ndvi_loader.js hasn't
-    // already drawn a real chart into that same canvas for this district
-    // (Chart.js keeps a live registry keyed by canvas -- this is a safe
-    // check regardless of which loader's handler ran first).
+    // Previously this asked `!!Chart.getChart('chartNdvi')` and treated a
+    // live instance as proof that DiCRA had drawn a real chart FOR THIS
+    // district -- which is exactly how a previous district's series stayed
+    // on screen unchallenged. Callers now clear the stale chart first (see
+    // killStaleDicraChart), so an empty canvas here genuinely means empty.
     var hasRealChart = (typeof Chart !== 'undefined' && Chart.getChart) ? !!Chart.getChart('chartNdvi') : false;
     if (!hasRealChart) {
       var emptyEl = document.getElementById('empty-chartNdvi');
@@ -153,6 +170,10 @@
     if (!districtName) return;
     var dslug = slugify(districtName);
     if (dicraDistricts[dslug]) { clearNationalPanel(); return; } // dicra_ndvi_loader.js owns this one
+    // Not a DiCRA district -- so whatever is in the DiCRA-only #chartNdvi
+    // canvas belongs to a district that is no longer selected. Drop it
+    // before deciding what this pane should show.
+    killStaleDicraChart();
     loadManifests().then(function () {
       var entry = lookup[dslug];
       if (!entry) { clearNationalPanel(); return; } // GEE hasn't computed this district's NDVI yet
