@@ -73,6 +73,52 @@ The rule applied to all three: cite and link the official portal, integrate
 only where the publisher provides a machine-readable endpoint under terms that
 permit it, and never scrape a dashboard to manufacture coverage.
 
+## Administrative vintage of the Survey of India district layer (2026-09-14)
+
+**Owner report:** "MP ke sabhi 55 district nahi dikh rahe hain."
+**Confirmed — this is real, and it is a source-vintage gap, not a bug in
+this repo's code.**
+
+`data/boundaries/soi/districts.geojson` carries **52** Madhya Pradesh
+districts. Madhya Pradesh officially has **55**. The three absent ones
+are exactly the three created in 2023, after this SoI/NWDP product's
+vintage:
+
+| District | Carved out of | Notified |
+|---|---|---|
+| Mauganj | Rewa | 15 Aug 2023 |
+| Pandhurna | Chhindwara | 5 Oct 2023 |
+| Maihar | Satna | 5 Oct 2023 |
+
+Verified in this repo's own data, not just asserted: each of the three
+is present as a **tehsil/sub-district of its parent district** — grep
+confirms `Maihar` inside `data/soil_moisture/madhya_pradesh/satna.json`,
+`Mauganj` inside `rewa.json`, and `Pandhurna` inside `chhindwara.json`.
+So their territory, villages and readings are all present and correct;
+they are simply still filed under the parent district, which is what the
+source itself says.
+
+Every downstream count inherits this vintage, which is why the UI
+honestly reports "mean of 52 of 52 real districts" for Madhya Pradesh —
+that figure is not wrong about what it has, it is describing a 52-district
+universe.
+
+**Not fixable by editing this repo.** Splitting Rewa/Satna/Chhindwara
+into parent + child polygons would mean drawing boundaries no official
+source here publishes, and re-attributing climate/NDVI/crop values
+between them would mean inventing per-district numbers — both barred
+outright by CLAUDE.md's no-fabrication rule. The only legitimate fix is a
+newer upstream SoI/NWDP district product that already contains the three,
+re-run through `build_national_soi_boundaries.py --stage district`.
+
+**Status: pending official source.** Whether NWDP has published a
+post-2023 district boundary product has NOT been confirmed here — it
+needs a check against https://nwdp.nwic.gov.in (STANDING ORDERS #3's
+"check NWDP first" rule) and, if a newer vintage exists, an owner
+decision, because re-cutting the district layer also re-cuts the
+block/village slices keyed to it and touches the Hugging Face-hosted
+650 MB boundary set (STANDING ORDERS #8 — do not decide alone).
+
 ## Geometry simplification for web delivery (2026-08, revised 2026-08-02)
 
 `build_national_soi_boundaries.py` simplifies every SoI boundary layer

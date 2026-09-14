@@ -197,6 +197,29 @@
       if (typeof originalOnDistrictChange === 'function') originalOnDistrictChange(distKey);
       handleDistrictChange(distKey);
     };
+
+    // AUDIT_FIX_PROMPT.md item 0C part 2 (2026-09-14): the wrapper above is
+    // NOT reliably reached. `window.onDistrictChange = ...` is a single-slot
+    // assignment, so whichever module boots LAST silently wins -- measured
+    // live on the deployed site, `String(window.onDistrictChange).length`
+    // was 59 and contained no reference to handleDistrictChange at all, i.e.
+    // this file's wrapper had been overwritten and its district handler had
+    // not been running. That is why the stale-DiCRA-chart clear added in the
+    // previous commit still did nothing for Uttar Pradesh -> Agra.
+    //
+    // A real addEventListener does not have that failure mode: listeners
+    // accumulate instead of clobbering each other, so this one runs no
+    // matter what any other module assigns to window.onDistrictChange
+    // afterwards. Guarded against double-binding so the wrapper path and
+    // this path cannot both act on one change.
+    var ds = document.getElementById('districtSelect');
+    if (ds && !ds._ndviStaleBound) {
+      ds._ndviStaleBound = true;
+      ds.addEventListener('change', function () {
+        try { handleDistrictChange(ds.value || null); }
+        catch (e) { console.warn('[national_ndvi] district change:', e); }
+      });
+    }
     var originalOnBlockChange = window.onBlockChange;
     window.onBlockChange = function (blockName) {
       if (typeof originalOnBlockChange === 'function') originalOnBlockChange(blockName);
@@ -209,9 +232,21 @@
     };
   }
 
+  // Wait for #districtSelect to exist before booting -- it is created by the
+  // location selector, which may not be in the DOM 1000ms in on a slow load.
+  // Without this the addEventListener above would silently be skipped and we
+  // would be back to depending on the clobber-prone window.onDistrictChange.
+  function bootWhenReady(tries) {
+    if (!document.getElementById('districtSelect') && (tries || 0) < 40) {
+      setTimeout(function () { bootWhenReady((tries || 0) + 1); }, 500);
+      return;
+    }
+    boot();
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 1000); });
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(function(){ bootWhenReady(0); }, 1000); });
   } else {
-    setTimeout(boot, 1000);
+    setTimeout(function(){ bootWhenReady(0); }, 1000);
   }
 })();
