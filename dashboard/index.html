@@ -1412,6 +1412,11 @@ body.mk-modal-open #pane-merakhet.active{
 .u-icon-18{width:18px;height:18px;}
 .u-logo-icon{width:36px;height:36px;flex-shrink:0;object-fit:contain;}
 .u-empty-note{font-size:10px;opacity:.7;margin-top:4px;line-height:1.5;}
+/* item 7b: Agriculture pane chart headline + source line */
+.u-agri-headline{font-size:var(--fs-2);font-weight:700;line-height:1.5;margin-bottom:var(--space-04);}
+.u-agri-headline:empty{display:none;}
+.u-agri-src{font-size:var(--fs-1);opacity:.75;line-height:1.6;margin:var(--space-03) 0 var(--space-08);}
+.u-agri-src:empty{display:none;}
 /* AUDIT_FIX_PROMPT item 10b -- Fertilizer & Crop Recommendation
    (dashboard/fertilizer_loader.js). Kept in the same CSS-variable system as
    the rest of the page rather than adding inline styles (PENDING.md item 9). */
@@ -1952,6 +1957,14 @@ body.mk-modal-open #pane-merakhet.active{
         <div class="btm-pane" id="pane-agriculture">
           <div class="section-header"><i class="fa fa-wheat-awn u-green-sm"></i><div class="section-title">AGRICULTURE &amp; CROP HEALTH <span id="agriDistName" class="u-orange"></span></div></div>
           <div class="u-scroll-pane">
+            <!-- AUDIT_FIX_PROMPT.md item 7b (2026-09-14): this pane was metric-cards
+                 + advisory text only, with no graphical view. The chart below plots
+                 the district's own real IMD-derived annual series (annual_rain_mm and
+                 spi_12 from mp_climate_data.json .districts.<d>.annual, 2000-2024) --
+                 the same record the cards summarise, nothing new computed. -->
+            <div id="agri-chart-headline" class="u-agri-headline"></div>
+            <div class="chart-wrap u-h200"><canvas id="chartAgri"></canvas><div class="chart-empty" id="empty-chartAgri"><i class="fa fa-wheat-awn chart-empty-icon"></i><span>Select a district to see its annual rainfall and drought-index record.</span><button class="btm-pane-empty-btn" onclick="focusLocationSelector()"><i class="fa fa-location-crosshairs"></i> Select district</button></div></div>
+            <div id="agri-chart-source" class="u-agri-src"></div>
             <div class="agri-metrics u-flex-gap05-mb05-wrap">
               <div class="metric-card u-fmw100"><div class="metric-label">CROP HEALTH</div><div class="metric-value u-green" id="agri-crop-health">—</div></div>
               <div class="metric-card u-fmw100"><div class="metric-label">NDVI MEAN</div><div class="metric-value u-teal" id="agri-ndvi">—</div></div>

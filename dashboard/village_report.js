@@ -1798,6 +1798,24 @@
 
     setInterval(function () {
       if (!isActive()) return;
+      // AUDIT_FIX_PROMPT.md item 7b / item 9 (2026-09-14): opening this tab
+      // with a location ALREADY chosen used to land on the idle "…then press
+      // View Report" card -- a text prompt where the spec asks for a filled,
+      // chart-first panel (this report's own land-use, crop-trend and NDVI
+      // charts were one unnecessary click away the whole time). Once a real
+      // district is selected there is genuinely something to draw, so render
+      // it. Still gated on a district: with only a State picked there is no
+      // village record to report on, and the idle card stays honest.
+      if (!_rendered) {
+        var actx = readContext();
+        if (actx && actx.districtName) {
+          _rendered = true;
+          _lastSig = ctxSignature(actx);
+          _lastOptsSig = optsSignature();
+          refresh(true);
+          return;
+        }
+      }
       var sig = ctxSignature(readContext());
       var osig = optsSignature();
       if (sig !== _lastSig) {

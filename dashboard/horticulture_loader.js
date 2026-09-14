@@ -191,6 +191,27 @@
         infoIcon('Source does not publish district-wise horticulture data -- figures apply to all of ' + hort.metadata.state + ', not specifically to ' + sd.districtName + '.') +
         '</div>';
 
+      // AUDIT_FIX_PROMPT.md item 7b (2026-09-14): this pane was table-only --
+      // five real category tables, but no graphical view at all, so it read
+      // as a spreadsheet rather than an analytics panel. The chart below is
+      // the SAME published Area/Production/Yield rows the tables show, just
+      // plotted across the source's own years_covered; nothing is
+      // interpolated, and a crop-year with no published row is left as a
+      // gap in the line (spanGaps:false) rather than joined through.
+      var hortSeries = buildHortSeries(hort, latestYear);
+      if (hortSeries.years.length > 1 && hortSeries.series.length) {
+        if (hortSeries.headline) {
+          h += '<div style="margin-bottom:var(--space-04);font-size:var(--fs-2);font-weight:700;line-height:1.5">' +
+            hortSeries.headline + '</div>';
+        }
+        h += '<div class="chart-wrap u-h200"><canvas id="chartHort"></canvas></div>';
+        h += '<div style="margin:var(--space-03) 0 var(--space-08);font-size:var(--fs-1);opacity:.75;line-height:1.6">' +
+          t('Source', 'स्रोत') + ' · ' + (hort.metadata.source || 'Horticultural Statistics at a Glance') +
+          ' · ' + t('state-level (no district breakdown is published)', 'राज्य-स्तरीय (ज़िलेवार आंकड़ा प्रकाशित नहीं)') +
+          ' · ' + hortSeries.years[0] + ' – ' + hortSeries.years[hortSeries.years.length - 1] +
+          '</div>';
+      }
+
       categories.forEach(function (cat) {
         var rows = groups[cat]
           .filter(function (r) { return r.year === latestYear; })
@@ -223,6 +244,113 @@
         '</div></div>';
 
       box.innerHTML = h;
+      if (hortSeries.years.length > 1 && hortSeries.series.length) drawHortChart(hortSeries);
+    });
+  }
+
+  // Top crops by the LATEST published year's area, each plotted across
+  // every year the source covers. Area (not production) picks the crops so
+  // the selection reflects how much of the state is actually under them,
+  // and the same crop set is used for every year -- no per-year re-ranking
+  // that would make the lines cross for a purely cosmetic reason.
+  var HORT_SERIES_N = 6;
+  function buildHortSeries(hort, latestYear) {
+    var years = (hort.metadata.years_covered || []).slice();
+    if (years.length < 2) return { years: years, series: [], headline: '' };
+
+    var latest = hort.records.filter(function (r) { return r.year === latestYear && r.area_ha != null; });
+    latest.sort(function (a, b) { return (b.area_ha || 0) - (a.area_ha || 0); });
+    var picked = latest.slice(0, HORT_SERIES_N).map(function (r) { return r.crop; });
+
+    var byCropYear = {};
+    hort.records.forEach(function (r) {
+      byCropYear[r.crop + '||' + r.year] = r;
+    });
+
+    var series = picked.map(function (crop) {
+      return {
+        crop: crop,
+        data: years.map(function (y) {
+          var rec = byCropYear[crop + '||' + y];
+          return (rec && rec.production_tonnes != null) ? rec.production_tonnes : null;
+        })
+      };
+    });
+
+    // Headline: the real first-to-last change for the single largest crop.
+    // Only stated when BOTH endpoints are genuinely published -- otherwise
+    // no headline at all, rather than a change computed off a missing year.
+    var headline = '';
+    if (series.length) {
+      var top = series[0];
+      var a = top.data[0], b = top.data[top.data.length - 1];
+      if (a != null && b != null && a > 0) {
+        var pct = ((b - a) / a) * 100;
+        var dir = pct >= 0 ? t('up', 'बढ़ा') : t('down', 'घटा');
+        headline = top.crop + ' ' + t('production', 'उत्पादन') + ' ' + dir + ' ' +
+          Math.abs(pct).toFixed(1) + '% — ' + fmtNum(a) + ' → ' + fmtNum(b) + ' ' +
+          t('tonnes', 'टन') + ' (' + years[0] + ' → ' + years[years.length - 1] + ')';
+      }
+    }
+    return { years: years, series: series, headline: headline };
+  }
+
+  // Shared portal palette (same hues the other panels' multi-series charts
+  // use) -- colour identity per crop, assigned by rank, stable across
+  // re-renders for a given state.
+  var HORT_COLORS = ['#c26b1f', '#5cc3cd', '#8ad3aa', '#c9a843', '#b07fd0', '#e08a8a'];
+  var _hortChart = null;
+  function drawHortChart(model) {
+    if (typeof Chart === 'undefined') return;
+    var canvas = document.getElementById('chartHort');
+    if (!canvas) return;
+    if (_hortChart) { try { _hortChart.destroy(); } catch (e) {} }
+
+    var base = (typeof chartOpts === 'function')
+      ? chartOpts({ color: 'rgba(194,107,31,0.12)' })
+      : { responsive: true, maintainAspectRatio: false, scales: { x: {}, y: {} }, plugins: {} };
+
+    base.plugins = base.plugins || {};
+    base.plugins.tooltip = base.plugins.tooltip || {};
+    base.plugins.tooltip.callbacks = {
+      // Exact published value + the crop-year it belongs to (item 7b: hover
+      // must give the exact value and its date, not a rounded read-off).
+      label: function (item) {
+        if (item.parsed.y == null) return item.dataset.label + ': ' + t('not published', 'प्रकाशित नहीं');
+        return item.dataset.label + ': ' + fmtNum(item.parsed.y) + ' ' + t('tonnes', 'टन') +
+          ' (' + item.label + ')';
+      }
+    };
+    base.scales = base.scales || {};
+    base.scales.x = base.scales.x || {};
+    base.scales.y = base.scales.y || {};
+    base.scales.x.title = { display: true, text: t('Crop year', 'फसल वर्ष'), font: { size: 10, weight: 'bold' } };
+    base.scales.y.title = { display: true, text: t('Production (tonnes)', 'उत्पादन (टन)'), font: { size: 10, weight: 'bold' } };
+    base.scales.y.ticks = base.scales.y.ticks || {};
+    base.scales.y.ticks.callback = function (v) { return fmtNum(v); };
+
+    _hortChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: model.years,
+        datasets: model.series.map(function (s, i) {
+          var c = HORT_COLORS[i % HORT_COLORS.length];
+          return {
+            label: s.crop,
+            data: s.data,
+            borderColor: c,
+            backgroundColor: c,
+            borderWidth: 2,
+            tension: 0.25,
+            pointRadius: 3,
+            // A year the source does not publish for this crop stays a
+            // visible gap -- never bridged into a straight line that would
+            // read as a real measured value.
+            spanGaps: false
+          };
+        })
+      },
+      options: base
     });
   }
 

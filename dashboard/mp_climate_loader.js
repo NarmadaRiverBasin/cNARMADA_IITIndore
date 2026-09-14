@@ -64,6 +64,107 @@
     if (el) el.style.display = show ? 'flex' : 'none';
   }
 
+  // AUDIT_FIX_PROMPT.md item 7b (2026-09-14): the Agriculture pane had no
+  // graphical view at all -- only metric cards and advisory text. This plots
+  // the district's own real IMD-derived annual record (annual_rain_mm bars +
+  // spi_12 line, 2000-2024) straight from mp_climate_data.json. Both series
+  // are published values already shown as single numbers elsewhere in this
+  // same pane; nothing here is smoothed, re-based or projected. Where a
+  // district has no annual record the chart is left in its honest empty
+  // state rather than drawn from a substitute district.
+  var _agriChart = null;
+  function drawAgriChart(d){
+    var canvas = document.getElementById('chartAgri');
+    var headEl = document.getElementById('agri-chart-headline');
+    var srcEl  = document.getElementById('agri-chart-source');
+    if (!canvas) return;
+    var ann = d && d.annual;
+    var hasSeries = !!(ann && ann.years && ann.years.length &&
+                       ann.annual_rain_mm && ann.annual_rain_mm.length);
+    if (typeof Chart === 'undefined' || !hasSeries) {
+      if (_agriChart) { try { _agriChart.destroy(); } catch(e){} _agriChart = null; }
+      setChartEmpty('chartAgri', true);
+      var emptySpan = document.querySelector('#empty-chartAgri span');
+      if (emptySpan) {
+        emptySpan.textContent = (d && d.name ? d.name : 'This district') +
+          ' has no annual rainfall/SPI series in this dataset, so no chart is drawn ' +
+          'rather than one built from a neighbouring district.';
+      }
+      if (headEl) headEl.textContent = '';
+      if (srcEl)  srcEl.textContent = '';
+      return;
+    }
+    setChartEmpty('chartAgri', false);
+
+    var years = ann.years;
+    var rainArr = ann.annual_rain_mm;
+    var spiArr = ann.spi_12 || [];
+
+    // Headline: the real long-run mean and where the LAST published year sits
+    // against it. Both numbers come straight from the plotted series.
+    if (headEl) {
+      var valid = rainArr.filter(function(v){ return v != null; });
+      if (valid.length) {
+        var mean = valid.reduce(function(x,y){ return x+y; }, 0) / valid.length;
+        var lastI = -1;
+        for (var i = rainArr.length - 1; i >= 0; i--) { if (rainArr[i] != null) { lastI = i; break; } }
+        if (lastI >= 0) {
+          var diffPct = ((rainArr[lastI] - mean) / mean) * 100;
+          headEl.textContent = years[lastI] + ' rainfall ' + Math.round(rainArr[lastI]) + ' mm — ' +
+            Math.abs(diffPct).toFixed(0) + '% ' + (diffPct >= 0 ? 'above' : 'below') +
+            ' the ' + years[0] + '–' + years[years.length-1] + ' mean of ' + Math.round(mean) + ' mm';
+        }
+      }
+    }
+    if (srcEl) {
+      srcEl.textContent = 'Source · IMD 0.05° gridded daily (village-centroid sample), SPI-12 per McKee ' +
+        '· district-level series · ' + years[0] + '–' + years[years.length-1];
+    }
+
+    var grid = {color:'rgba(138,211,170,0.15)'};
+    var opts = (typeof chartOpts === 'function') ? chartOpts(grid)
+      : {responsive:true, maintainAspectRatio:false, scales:{x:{},y:{}}, plugins:{}};
+    opts.scales = opts.scales || {};
+    opts.scales.x = opts.scales.x || {};
+    opts.scales.y = opts.scales.y || {};
+    opts.scales.x.title = {display:true, text:'Year', font:{size:10, weight:'bold'}};
+    opts.scales.y.title = {display:true, text:'Annual rainfall (mm)', font:{size:10, weight:'bold'}};
+    opts.scales.y.position = 'left';
+    opts.scales.y1 = {
+      position:'right',
+      grid:{display:false},
+      ticks:{font:{size:10, weight:'bold'}},
+      title:{display:true, text:'SPI-12 (standardised)', font:{size:10, weight:'bold'}}
+    };
+    opts.plugins = opts.plugins || {};
+    opts.plugins.tooltip = opts.plugins.tooltip || {};
+    opts.plugins.tooltip.callbacks = {
+      label: function(item){
+        if (item.parsed.y == null) return item.dataset.label + ': not available';
+        var isSpi = item.dataset.yAxisID === 'y1';
+        return item.dataset.label + ': ' + (isSpi ? item.parsed.y.toFixed(2)
+                                                  : Math.round(item.parsed.y) + ' mm') +
+               ' (' + item.label + ')';
+      }
+    };
+
+    killChart('chartAgri');
+    _agriChart = new Chart(canvas, {
+      type:'bar',
+      data:{
+        labels: years,
+        datasets:[
+          {label:'Annual rainfall (mm)', data: rainArr, yAxisID:'y',
+           backgroundColor:'rgba(92,195,205,0.5)', borderColor:'#5cc3cd', borderWidth:1},
+          {label:'SPI-12 (drought index)', data: spiArr, type:'line', yAxisID:'y1',
+           borderColor:'#c9a843', backgroundColor:'transparent', borderWidth:2,
+           tension:0.3, pointRadius:2, spanGaps:false}
+        ]
+      },
+      options: opts
+    });
+  }
+
   function rebuildCharts(districtKey){
     if (typeof Chart === 'undefined' || !state.data) return;
     var ch = state.data.charts;
@@ -440,6 +541,7 @@
     if (!d) return;
     var dnEl = document.getElementById('agriDistName');
     if (dnEl) dnEl.textContent = '— '+ d.name + (villageName ? ' › '+villageName : '') + (window._hazardYear ? ' | Year '+window._hazardYear : '');
+    try { drawAgriChart(d); } catch(e) { console.warn('[loader] drawAgriChart:', e); }
     var idx = d.indices;
     var vi = null;
     if (villageName) {

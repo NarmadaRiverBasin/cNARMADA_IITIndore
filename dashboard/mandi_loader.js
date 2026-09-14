@@ -119,7 +119,8 @@
       // pane was a plain HTML table only -- real min/modal/max prices per
       // commodity, but no graphical view. Chart is real published APMC
       // data (same rows the table below shows), not a separate estimate.
-      h += '<div class="chart-wrap u-h140"><canvas id="chartMandi"></canvas></div>';
+      h += '<div id="mandi-headline" style="margin-bottom:6px;font-size:12px;font-weight:700;line-height:1.5"></div>';
+      h += '<div class="chart-wrap u-h200"><canvas id="chartMandi"></canvas></div>';
       // Group by commodity, keep the best-priced market row per commodity
       h += '<table style="width:100%;border-collapse:collapse;font-size:11.5px">' +
         '<tr style="text-align:left;font-size:10px;opacity:.65;letter-spacing:.3px">' +
@@ -172,6 +173,60 @@
     if (d.records && d.records.length) drawMandiChart(d.records);
   }
 
+  // AUDIT_FIX_PROMPT.md item 7b (2026-09-14): this chart already existed and
+  // already plotted real published prices, but it opted out of the portal's
+  // shared chartOpts() and carried no axis titles, no legend and no headline
+  // -- the three things item 7b asks every chart for. Rebuilt on chartOpts()
+  // so it inherits the same hover/tooltip/animation layer as every other
+  // chart here. Horizontal bars: commodity names were previously rotated 45
+  // degrees and colliding; on the y-axis they read straight.
+  function mandiChartOptions(rows) {
+    var grid = { color: 'rgba(138,211,170,0.1)' };
+    var o = (typeof chartOpts === 'function') ? chartOpts(grid)
+      : { responsive: true, maintainAspectRatio: false, scales: { x: {}, y: {} }, plugins: {} };
+    o.indexAxis = 'y';
+    o.plugins = o.plugins || {};
+    o.plugins.legend = { display: false };
+    o.plugins.tooltip = o.plugins.tooltip || {};
+    o.plugins.tooltip.callbacks = {
+      afterLabel: function (item) {
+        var r = rows[item.dataIndex];
+        // Always show how many real market records the bar is built
+        // from -- an aggregate without its count is not auditable
+        // (FINAL_PROMPT.md Phase 8.2 / docs/METHODOLOGY.md Sec 3.1).
+        var basis = (r.n > 1)
+          ? t('mean of ', 'का औसत: ') + r.n + t(' markets', ' मंडी')
+          : t('1 market (as published, not averaged)', '1 मंडी (प्रकाशित, औसत नहीं)');
+        return [t('Range: ', 'रेंज: ') + inr(r.min) + ' – ' + inr(r.max), basis];
+      }
+    };
+    o.scales = o.scales || {};
+    o.scales.x = o.scales.x || {};
+    o.scales.y = o.scales.y || {};
+    o.scales.x.grid = grid;
+    o.scales.x.ticks = { font: { size: 9, weight: 'bold' }, callback: function (v) { return inr(v); } };
+    o.scales.x.title = { display: true, text: t('Modal price (₹ per quintal)', 'मॉडल भाव (₹ प्रति क्विंटल)'), font: { size: 10, weight: 'bold' } };
+    o.scales.y.grid = { display: false };
+    o.scales.y.ticks = { font: { size: 9, weight: 'bold' }, autoSkip: false };
+    o.scales.y.title = { display: true, text: t('Commodity', 'जिंस'), font: { size: 10, weight: 'bold' } };
+    return o;
+  }
+
+  // One-line real headline: the highest-priced commodity actually published
+  // today and how many commodity/market rows the panel is built from. Every
+  // number is read back off the same rows the chart plots.
+  function setMandiHeadline(rows, records) {
+    var elh = document.getElementById('mandi-headline');
+    if (!elh || !rows.length) return;
+    var top = rows[0];
+    var markets = {};
+    records.forEach(function (r) { markets[r.market] = 1; });
+    elh.textContent = t('Highest modal price today: ', 'आज का सर्वाधिक मॉडल भाव: ') +
+      top.name + ' ₹' + inr(top.modal) + t('/quintal', '/क्विंटल') + ' · ' +
+      rows.length + ' ' + t('commodities across', 'जिंस,') + ' ' +
+      Object.keys(markets).length + ' ' + t('market(s)', 'मंडी');
+  }
+
   var _mandiChart = null;
   function drawMandiChart(records) {
     if (typeof Chart === 'undefined') return;
@@ -213,31 +268,9 @@
           borderWidth: 1
         }]
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              afterLabel: function (item) {
-                var r = rows[item.dataIndex];
-                // Always show how many real market records the bar is built
-                // from -- an aggregate without its count is not auditable
-                // (FINAL_PROMPT.md Phase 8.2 / docs/METHODOLOGY.md Sec 3.1).
-                var basis = (r.n > 1)
-                  ? t('mean of ', 'का औसत: ') + r.n + t(' markets', ' मंडी')
-                  : t('1 market (as published, not averaged)', '1 मंडी (प्रकाशित, औसत नहीं)');
-                return [t('Range: ', 'रेंज: ') + inr(r.min) + ' – ' + inr(r.max), basis];
-              }
-            }
-          }
-        },
-        scales: {
-          x: { ticks: { font: { size: 8 }, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
-          y: { ticks: { font: { size: 8 } }, grid: { color: 'rgba(138,211,170,0.1)' } }
-        }
-      }
+      options: mandiChartOptions(rows)
     });
+    setMandiHeadline(rows, records);
   }
 
   function load() {
