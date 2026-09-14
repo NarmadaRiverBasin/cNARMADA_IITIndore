@@ -1582,10 +1582,9 @@ body.mk-modal-open #pane-merakhet.active{
   </div>
 
   <div class="hero-content">
-    <div class="hero-badge hero-text-safe">
-      <div class="hero-badge-dot"></div>
-      OPERATIONAL &nbsp;|&nbsp; IMD &middot; DiCRA &middot; CMIP6
-    </div>
+    <!-- Owner, 2026-09-14: "OPERATIONAL | IMD · DiCRA · CMIP6" badge
+         removed from the landing hero on request. The sources it named are
+         still declared in the page footer and docs/DATA_SOURCES.md. -->
     <!-- Owner, 2026-09-14: landing-page title is now the basin programme
          name, in uppercase, matching the repo's move to the
          NarmadaRiverBasin organisation. Only the landing hero is renamed --
@@ -1595,7 +1594,8 @@ body.mk-modal-open #pane-merakhet.active{
     <div class="hero-title hero-text-safe">
       <div class="line1">NARMADA RIVER BASIN</div>
       <div class="line1">MANAGEMENT</div>
-      <div class="line2">CLIMATE RISK &bull; SATELLITE NDVI &bull; AGRICULTURAL ADVISORY</div>
+      <!-- Owner, 2026-09-14: "CLIMATE RISK • SATELLITE NDVI • AGRICULTURAL
+           ADVISORY" strapline removed from the landing hero on request. -->
     </div>
     <!-- Landing-page introduction paragraph removed per owner request
          2026-09-01. -->
@@ -1605,9 +1605,14 @@ body.mk-modal-open #pane-merakhet.active{
          fetch+animate script already targets. The two dropped boxes'
          information (observed-climate count, projected-climate status)
          moves to .hero-climate-line just below, not deleted. -->
-    <div class="hero-boundary-row hero-text-safe">
-      <span id="hero-stat-states">36</span> States/UTs<span class="hb-sep">&middot;</span><span id="hero-stat-districts">733</span> Districts<span class="hb-sep">&middot;</span><span id="hero-stat-blocks">6,312</span> Blocks/Tehsils<span class="hb-sep">&middot;</span><span id="hero-stat-villages">6,54,285</span> Villages
-    </div>
+    <!-- Owner, 2026-09-14: the "36 States/UTs · 733 Districts · 6,312
+         Blocks/Tehsils · 6,54,285 Villages" row is removed from the landing
+         hero on request. The fetch below that populated it is left in place
+         and is harmless: every writer goes through setStatEl(), which
+         no-ops when its element is absent, and the same manifest still
+         feeds the login gate's tagline (#gateTaglineVillages), which is a
+         different element and still shows a real counted number. Nothing
+         here was hardcoded, so nothing real is lost by hiding it. -->
     <div class="hero-roles">
       <div class="role-card" onclick="selectRole('admin')">
         <div class="role-icon"><i class="fa fa-building"></i></div>
