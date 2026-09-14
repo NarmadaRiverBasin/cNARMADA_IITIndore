@@ -681,7 +681,22 @@ body{min-height:100%;background:var(--bg-deep);color:var(--text);font-family:'In
 .metric-card.warn{border-color:rgba(212,121,58,0.3);background:rgba(212,121,58,0.04);}
 .metric-card.good{border-color:rgba(45,143,92,0.25);background:rgba(45,143,92,0.03);}
 .metric-label{font-size:var(--fs-1);font-weight:600;color:var(--text-dim);letter-spacing:1px;margin-bottom:var(--space-025);}
-.metric-value{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:var(--fs-4);font-weight:700;font-variant-numeric:tabular-nums;}
+/* min-width:0 + wrapping: a grid item defaults to min-width:auto, i.e. it
+   refuses to shrink below its min-content width -- so a non-wrapping
+   value like "731 districts" overflows its track and punches straight
+   through #right-panel's 84px chat-FAB gutter (measured live 2026-09-14:
+   right edge x=1433 vs the gutter's 1382, and further still at the
+   larger farmer-role font). That overflow is what actually lets the FAB
+   cover a data card; the gutter alone cannot hold if its contents are
+   allowed to spill out of it. Fixing the spill here fixes it for every
+   role and every font size at once (item 15b, root cause).
+   `break-word`, deliberately NOT `anywhere`: `anywhere` also lowers the
+   element's min-content contribution, which collapsed this 1fr track to
+   a single character and rendered "731 districts" one letter per line
+   (seen live while verifying this very fix). `break-word` leaves
+   min-content alone, so the track still sizes to the longest word and
+   the value simply wraps at its space. */
+.metric-value{font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;font-size:var(--fs-4);font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:break-word;}
 /* Owner request (2026-09): Climate Metrics right-panel (#right-panel)
    text read too small -- bold + a bit bigger, but staying under the
    sidebar nav-label size (--fs-3, the "Core Dashboard" text the owner
@@ -705,7 +720,15 @@ body{min-height:100%;background:var(--bg-deep);color:var(--text);font-family:'In
    .metric-card rules other panels (Historical Indices, Agriculture,
    etc.) still use unchanged. */
 .climate-metrics-table{display:flex;flex-direction:column;padding:0;}
-.climate-metrics-table .metric-card{display:grid;grid-template-columns:1fr auto;column-gap:var(--space-1);align-items:center;background:transparent;border:none;border-bottom:1px solid var(--border);border-left:3px solid transparent;border-radius:0;padding:var(--space-075) var(--space-1);transform:none;}
+/* minmax(0,1fr), not 1fr: `1fr` is shorthand for `minmax(auto,1fr)`, so
+   the label column refuses to shrink below its own min-content (measured
+   live: 140px) -- label 140px + value 71px = 211px inside a 195px card,
+   i.e. the value spills 16px out the right side and straight through
+   #right-panel's 84px chat-FAB gutter, which is what actually let the
+   FAB cover a data card (item 15b, real root cause). minmax(0,1fr) lets
+   the label wrap instead, keeping the value inside the card at every
+   font size -- including the larger farmer-role scale (item 0D). */
+.climate-metrics-table .metric-card{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:var(--space-1);align-items:center;background:transparent;border:none;border-bottom:1px solid var(--border);border-left:3px solid transparent;border-radius:0;padding:var(--space-075) var(--space-1);transform:none;}
 .climate-metrics-table .metric-card:hover{background:rgba(26,138,158,0.04);transform:none;}
 .climate-metrics-table .metric-card.alert{background:transparent;border-left-color:var(--red);}
 .climate-metrics-table .metric-card.warn{background:transparent;border-left-color:var(--orange);}
@@ -821,6 +844,73 @@ canvas.chart-canvas{max-height:100%;}
 #bottom-panel.expanded .btm-content{display:flex;flex-direction:column;}
 .btm-pane{display:none;flex:1;flex-direction:column;overflow:hidden;position:relative;}
 .btm-pane.active{display:flex;}
+
+/* ============================================================
+   item 0D -- THREE-ROLE LAYERED VIEW (see dashboard/role_view.js)
+   Pure UI personalisation: which panel a visitor LANDS on, at what
+   font size, in which language. Not a permission system -- every
+   panel below stays reachable from every role, and there is no
+   "access denied" wording anywhere in this block or in role_view.js.
+   ------------------------------------------------------------ */
+/* Combined/stacked default view (farmer + corporate). Several existing
+   panes are shown at once, in `order`, WITHOUT cloning them -- cloning
+   would duplicate element ids and break every loader that looks its own
+   nodes up by id. flex:0 0 auto because .btm-pane's default flex:1
+   would otherwise make four stacked panes fight over a container whose
+   height is content-driven, collapsing them all. */
+body.role-stack .btm-pane.role-stacked{display:flex!important;flex:0 0 auto;}
+body.role-stack .btm-pane.role-stacked + .btm-pane.role-stacked{
+  margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid var(--border);}
+/* Farmer: hide the three technical tabs until "Advanced view दिखाएं" is
+   clicked. display:none, not disabled/removed -- one click reveals them
+   in place, and the sidebar route to each still works regardless
+   (setBtmTab() activates a pane by id whether or not its tab button is
+   visible -- same mechanism .btm-tab-dup already relies on). */
+body.role-view-farmer:not(.role-advanced) .btm-tab[data-role-tech="1"],
+body.role-view-farmer:not(.role-advanced) #sidebar .nav-item[data-role-tech="1"]{display:none!important;}
+.role-advanced-toggle{flex:0 0 auto!important;color:var(--cyan)!important;font-style:italic;}
+/* Farmer: larger base type. Bumps the shared --fs-* scale rather than
+   hardcoding sizes, so every card/label/axis grows together and nothing
+   has to be restyled per component. */
+body.role-view-farmer{--fs-1:12.5px;--fs-2:15px;--fs-3:17px;--fs-4:22px;--fs-5:30px;}
+/* At the farmer scale the 280px Climate Metrics column is simply too
+   narrow to keep label and value side by side -- sharing ~195px between
+   a 22px value and its label shreds the label into one word per line.
+   Stack them instead, so each gets the full width and stays readable.
+   Only the farmer role changes; admin/corporate keep the two-column
+   card exactly as it is today.
+   Note the child re-placement below is REQUIRED, not belt-and-braces:
+   .climate-metrics-table's children are explicitly positioned
+   (.metric-value is grid-column:2, grid-row:1/span 3), so changing only
+   grid-template-columns leaves the value in an IMPLICIT second column
+   and nothing visibly stacks -- verified live before writing these. */
+body.role-view-farmer .climate-metrics-table .metric-card{grid-template-columns:minmax(0,1fr);row-gap:2px;}
+body.role-view-farmer .climate-metrics-table .metric-label{grid-column:1;grid-row:1;}
+body.role-view-farmer .climate-metrics-table .metric-value{grid-column:1;grid-row:2;text-align:left;align-self:start;}
+body.role-view-farmer .climate-metrics-table .metric-bar{grid-column:1;grid-row:3;}
+body.role-view-farmer .climate-metrics-table .metric-trend{grid-column:1;grid-row:4;}
+body.role-view-farmer .climate-metrics-table .metric-source{grid-column:1;grid-row:5;}
+/* Switch-role button + modal */
+#roleSwitcherOverlay{position:fixed;inset:0;background:rgba(10,16,26,0.55);z-index:4000;
+  display:flex;align-items:center;justify-content:center;padding:1rem;}
+.role-switch-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-12);
+  padding:1.25rem;max-width:560px;width:100%;}
+.role-switch-head{font-size:var(--fs-4);font-weight:800;color:#1a2332;margin-bottom:var(--space-05);}
+.role-switch-sub{font-size:var(--fs-1);color:var(--text-dim);margin-bottom:var(--space-1);line-height:1.5;}
+.role-switch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-075);}
+.role-switch-card{border:1px solid var(--border);border-radius:var(--radius-8);padding:var(--space-1);
+  text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.role-switch-card:hover{border-color:var(--cyan);background:rgba(26,138,158,0.06);}
+.role-switch-card.selected{border-color:var(--cyan);background:rgba(26,138,158,0.1);}
+.role-switch-icon{font-size:var(--fs-4);color:var(--cyan);margin-bottom:var(--space-04);}
+.role-switch-title{font-size:var(--fs-2);font-weight:700;color:#1a2332;}
+.role-switch-desc{font-size:var(--fs-1);color:var(--text-dim);margin-top:2px;line-height:1.4;}
+.role-switch-cur{font-size:9px;font-weight:700;color:var(--cyan);letter-spacing:0.5px;
+  text-transform:uppercase;margin-top:var(--space-04);}
+.role-switch-close{margin-top:var(--space-1);width:100%;background:transparent;cursor:pointer;
+  border:var(--border-default);border-radius:var(--radius-8);padding:0.45rem;
+  font-size:var(--fs-1);font-weight:600;color:var(--text-dim);font-family:'Inter',sans-serif;}
+.role-switch-close:hover{background:rgba(26,138,158,0.06);color:var(--cyan);}
 
 /* Mera Khet full modal (owner report 2026-08-13: the shared 210px bottom
    strip made its field-measurement/download/ground-truth detail
@@ -1586,6 +1676,11 @@ body.mk-modal-open #pane-merakhet.active{
       <button class="topbar-toggle" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
       <div class="topbar-title">VINDHYA CLIMATE INTELLIGENCE</div>
       <button class="topbar-lang" id="topbarLangBtn" onclick="toggleGlobalLang()" title="Switch language / भाषा बदलें"><i class="fa fa-language"></i> <span id="topbarLangLabel">हिंदी</span></button>
+      <!-- item 0D: always-visible role switcher. Re-personalises the
+           default view without ever re-asking for name/organisation
+           (role_view.js's setRole() preserves the stored visitor record
+           and only rewrites .role). -->
+      <button class="topbar-lang" id="topbarRoleBtn" onclick="window.VindhyaRole&amp;&amp;window.VindhyaRole.openSwitcher()" title="भूमिका बदलें / Switch role"><i class="fa fa-user-gear"></i> <span id="topbarRoleLabel">भूमिका</span></button>
       <div class="topbar-time" id="clock">10:49:06 IST</div>
     </div>
 
@@ -2460,6 +2555,12 @@ function launchApp(){
   // map and every loader's own boot() (national_selector.js etc, several
   // of which use their own ~700-950ms setTimeout) have had time to finish.
   setTimeout(restoreFromHash, 1200);
+  // item 0D: read the role chosen at the gate (or stored from a previous
+  // visit) and open that role's personalised default view. Admin is the
+  // baseline and applies as a no-op, so this changes nothing for the
+  // existing default. boot() defers internally until the loaders that
+  // build the stacked panes have run.
+  if (window.VindhyaRole) window.VindhyaRole.boot();
 }
 var selectedRole = null;
 function selectRole(role){
@@ -2529,6 +2630,32 @@ window.addEventListener('hashchange', function(){
 // execution before initRouting() can possibly call launchApp() -> initChat()
 // synchronously during initial page load (e.g. reloading on #dashboard).
 setTimeout(initRouting, 0);
+
+// item 0D: a RETURNING visitor (session + role already in localStorage)
+// must not be asked to pick a role again. The hero's single CTA becomes
+// "Continue as <Role>" and goes straight to launchApp(), skipping the
+// login gate entirely -- the name/organisation are already stored, so
+// re-showing that form would be asking for data we already have. The
+// stored role's card is also pre-highlighted so the choice is visible
+// and still changeable right there (clicking any other role card runs
+// the normal selectRole() -> gate flow). First-time visitors see the
+// unchanged STEP 1 -> STEP 2 -> STEP 3 flow.
+function initReturningVisitor(){
+  var v = null;
+  try { v = JSON.parse(localStorage.getItem('vindhya_visitor') || 'null'); } catch(e){}
+  if (!v || !v.role) return;
+  selectedRole = v.role;
+  document.querySelectorAll('.role-card').forEach(function(c){
+    c.classList.toggle('selected', (c.getAttribute('onclick')||'').indexOf("'"+v.role+"'") >= 0);
+  });
+  var btn = document.querySelector('.hero-btns .btn-primary');
+  if (!btn) return;
+  var names = { admin:'Administration', farmer:'Farmer', corporate:'Corporate' };
+  btn.innerHTML = 'जारी रखें / Continue as ' + (names[v.role]||v.role) +
+                  ' &nbsp;<i class="fa fa-arrow-right"></i>';
+  btn.onclick = function(){ location.hash='dashboard'; launchApp(); };
+}
+setTimeout(initReturningVisitor, 0);
 
 // ============================================================
 // CLOCK
@@ -2966,8 +3093,14 @@ function closeMeraKhetModal(){
         bp.classList.add('expanded');
         setTimeout(function () { if (window.leafletMap) window.leafletMap.invalidateSize(); }, 260);
       }
+      // item 0D: a role's combined default view activates SEVERAL panes at
+      // once; letting each one push its own hash would leave the URL on
+      // whichever pane happened to be stacked last (e.g. "#pmfby" for the
+      // farmer view) -- wrong, and not a link that reproduces what is on
+      // screen. role_view.js raises this flag while it stacks and sets one
+      // hash for the whole view itself ("#farmer" / "#corporate").
       var slug = (pane.id || '').replace(/^pane-/, '');
-      if (slug && history.pushState && location.hash !== '#' + slug) {
+      if (slug && !window.__vindhyaRoleStacking && history.pushState && location.hash !== '#' + slug) {
         history.pushState(null, '', '#' + slug);
       }
       // AUDIT_FIX_PROMPT.md item 0B (owner report, 2026-09-01): Rainfall/
@@ -5095,6 +5228,7 @@ async function runChatCompletion(){
 <script src="groundwater_loader.js"></script>
 <script src="national_cmip6_loader.js"></script>
 <script src="fertilizer_loader.js"></script>
+<script src="role_view.js"></script>
 <!-- Village Profile & Agricultural Intelligence Report (owns #pane-village).
      Injects its own CSS and watches the pane's class itself, so this one
      line is the module's entire footprint in index.html. -->
