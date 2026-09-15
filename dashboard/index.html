@@ -1713,7 +1713,12 @@ body.mk-modal-open #pane-merakhet.active{
            nothing is lost: Crop Health above reaches the same bottom
            tab directly. -->
       <div class="nav-item" onclick="setNav(this,&#39;pmfby&#39;)"><span class="nav-icon"><i class="fa fa-shield-halved"></i></span><span class="nav-label" data-i18n>PMFBY Insurance</span></div>
-      <div class="nav-item" onclick="window.open(&#39;crop_insurance_pilot/pilot_study.html&#39;,&#39;_blank&#39;)" title="Synthetic 100-farmer crop-insurance pilot study -- a separate research proof-of-concept page built entirely on SYNTHETIC/SIMULATED farmer, parcel, remote-sensing and insurance data. This is NOT the Cadastral Map, and contains no real land records."><span class="nav-icon"><i class="fa fa-flask"></i></span><span class="nav-label" data-i18n style="font-size:10.5px;">Crop Insurance Pilot</span><span class="nav-badge" data-i18n>SYN</span></div>
+      <!-- Owner, 2026-09-14: "do dikh rahe hai, ek chahiye". The separate
+           "Crop Insurance Pilot" sidebar entry is removed so crop insurance
+           has ONE entry, the same one-name-one-place rule audit item 1
+           applied to the other nine duplicate pairs. Nothing is lost: the
+           29-section pilot study and the 8-module prototype are both linked
+           from the validation dashboard's own header. -->
       <div class="nav-item" onclick="window.open(&#39;crop_insurance_pilot/validation_dashboard.html&#39;,&#39;_blank&#39;)" title="Officer-side GeoAI Crop Insurance Validation Dashboard over the same synthetic 100-farmer pilot: District -> Village -> Farmer, cadastral parcel map, GeoAI actual cultivated area, hazard, crop loss, yield and indicative PMFBY claim, plus a one-click validation report. SYNTHETIC/SIMULATED data -- not real land records and not an official claim determination."><span class="nav-icon"><i class="fa fa-clipboard-check"></i></span><span class="nav-label" data-i18n style="font-size:10.5px;">Insurance Validation</span><span class="nav-badge" data-i18n>SYN</span></div>
       <div class="nav-section-title" data-i18n>ECOLOGY</div>
       <div class="nav-item" onclick="setNav(this,&#39;forest&#39;)"><span class="nav-icon"><i class="fa fa-tree"></i></span><span class="nav-label" data-i18n>Forest Monitor</span><span class="nav-badge" data-i18n>SOON</span></div>
@@ -5280,6 +5285,10 @@ async function runChatCompletion(){
      after geoai_professional.js -- reuses its exported geometry helpers
      (window.VindhyaGeoAI.ringAreaM2/perimeterM/haversineM). -->
 <script src="mera_khet.js"></script>
+<!-- cNARMADA basin panel: owner-supplied Narmada basin shapefile for selection,
+     this portal's existing real per-district data for every number shown.
+     Loaded after mera_khet.js so its sidebar item lands directly below it. -->
+<script src="cnarmada.js"></script>
 <script src="kisan_dashboard.js"></script>
 <script src="mandi_loader.js"></script>
 <script src="crop_stats_loader.js"></script>

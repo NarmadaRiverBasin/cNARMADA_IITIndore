@@ -1,0 +1,700 @@
+{
+ "metadata": {
+  "title": "Narmada basin districts (cNARMADA panel selection layer)",
+  "source": "District boundary shapefile supplied by the project owner (GADM-lineage attributes: ID_0/ISO/NAME_1/NAME_2/HASC_2), cross-checked against the owner's 'STATE and District.xlsx' selection list",
+  "source_note": "This is NOT the Survey of India boundary product used elsewhere in this portal (data/boundaries/soi/*). It is the owner-supplied basin delineation and is used ONLY to select and outline basin districts. Every analytic value the cNARMADA panel shows is read from this repo's existing per-district files, which are keyed to the SoI district names -- which is why district_slug is resolved to the SoI spelling here.",
+  "resolution": "district polygon, simplified 0.0005 deg (topology preserved)",
+  "crs": "EPSG:4326",
+  "processing": "scripts/build_cnarmada_basin.py -- reproject if needed, simplify, resolve 6 source spellings to this repo's SoI district names, and record which existing data layers exist per district",
+  "district_count": 40,
+  "states": [
+   "Chhattisgarh",
+   "Gujarat",
+   "Madhya Pradesh",
+   "Maharashtra"
+  ],
+  "last_updated": "2026-09-14"
+ },
+ "districts": [
+  {
+   "state": "Chhattisgarh",
+   "state_slug": "chhattisgarh",
+   "district": "Bilaspur",
+   "district_slug": "bilaspur",
+   "district_as_supplied": "Bilaspur",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Chhattisgarh",
+   "state_slug": "chhattisgarh",
+   "district": "Kabirdham",
+   "district_slug": "kabirdham",
+   "district_as_supplied": "Kabeerdham",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Chhattisgarh",
+   "state_slug": "chhattisgarh",
+   "district": "Mungeli",
+   "district_slug": "mungeli",
+   "district_as_supplied": "Mungeli",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Chhattisgarh",
+   "state_slug": "chhattisgarh",
+   "district": "Rajnandgaon",
+   "district_slug": "rajnandgaon",
+   "district_as_supplied": "Rajnandgaon",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Bharuch",
+   "district_slug": "bharuch",
+   "district_as_supplied": "Bharuch",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Chhotaudepur",
+   "district_slug": "chhotaudepur",
+   "district_as_supplied": "Chhota Udaipur",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Dohad",
+   "district_slug": "dohad",
+   "district_as_supplied": "Dahod",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Narmada",
+   "district_slug": "narmada",
+   "district_as_supplied": "Narmada",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Panch Mahals",
+   "district_slug": "panch_mahals",
+   "district_as_supplied": "Panch Mahals",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Surat",
+   "district_slug": "surat",
+   "district_as_supplied": "Surat",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Gujarat",
+   "state_slug": "gujarat",
+   "district": "Vadodara",
+   "district_slug": "vadodara",
+   "district_as_supplied": "Vadodara",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Alirajpur",
+   "district_slug": "alirajpur",
+   "district_as_supplied": "Alirajpur",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Balaghat",
+   "district_slug": "balaghat",
+   "district_as_supplied": "Balaghat",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Barwani",
+   "district_slug": "barwani",
+   "district_as_supplied": "Barwani",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Betul",
+   "district_slug": "betul",
+   "district_as_supplied": "Betul",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Bhopal",
+   "district_slug": "bhopal",
+   "district_as_supplied": "Bhopal",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": false,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "imd_village"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Burhanpur",
+   "district_slug": "burhanpur",
+   "district_as_supplied": "Burhanpur",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Chhindwara",
+   "district_slug": "chhindwara",
+   "district_as_supplied": "Chhindwara",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Damoh",
+   "district_slug": "damoh",
+   "district_as_supplied": "Damoh",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Dewas",
+   "district_slug": "dewas",
+   "district_as_supplied": "Dewas",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Dhar",
+   "district_slug": "dhar",
+   "district_as_supplied": "Dhar",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Dindori",
+   "district_slug": "dindori",
+   "district_as_supplied": "Dindori",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "East Nimar",
+   "district_slug": "east_nimar",
+   "district_as_supplied": "East Nimar",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Harda",
+   "district_slug": "harda",
+   "district_as_supplied": "Harda",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Narmadapuram",
+   "district_slug": "narmadapuram",
+   "district_as_supplied": "Hoshangabad",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Indore",
+   "district_slug": "indore",
+   "district_as_supplied": "Indore",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": false,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "imd_village"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Jabalpur",
+   "district_slug": "jabalpur",
+   "district_as_supplied": "Jabalpur",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": false,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "imd_village"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Jhabua",
+   "district_slug": "jhabua",
+   "district_as_supplied": "Jhabua",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Katni",
+   "district_slug": "katni",
+   "district_as_supplied": "Katni",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Mandla",
+   "district_slug": "mandla",
+   "district_as_supplied": "Mandla",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Narsinghpur",
+   "district_slug": "narsinghpur",
+   "district_as_supplied": "Narsimhapur",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Raisen",
+   "district_slug": "raisen",
+   "district_as_supplied": "Raisen",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Sagar",
+   "district_slug": "sagar",
+   "district_as_supplied": "Sagar",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Sehore",
+   "district_slug": "sehore",
+   "district_as_supplied": "Sehore",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Seoni",
+   "district_slug": "seoni",
+   "district_as_supplied": "Seoni",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Shahdol",
+   "district_slug": "shahdol",
+   "district_as_supplied": "Shahdol",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Umaria",
+   "district_slug": "umaria",
+   "district_as_supplied": "Umaria",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Madhya Pradesh",
+   "state_slug": "madhya_pradesh",
+   "district": "Khargone",
+   "district_slug": "khargone",
+   "district_as_supplied": "West Nimar",
+   "renamed_from_source": true,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Maharashtra",
+   "state_slug": "maharashtra",
+   "district": "Dhule",
+   "district_slug": "dhule",
+   "district_as_supplied": "Dhule",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  },
+  {
+   "state": "Maharashtra",
+   "state_slug": "maharashtra",
+   "district": "Nandurbar",
+   "district_slug": "nandurbar",
+   "district_as_supplied": "Nandurbar",
+   "renamed_from_source": false,
+   "layers": {
+    "climate": true,
+    "ndvi": true,
+    "soil_moisture": true,
+    "crop_des": true,
+    "groundwater": true,
+    "advisory": true
+   },
+   "climate_kind": "gee"
+  }
+ ]
+}

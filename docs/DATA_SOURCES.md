@@ -73,6 +73,52 @@ The rule applied to all three: cite and link the official portal, integrate
 only where the publisher provides a machine-readable endpoint under terms that
 permit it, and never scrape a dashboard to manufacture coverage.
 
+## cNARMADA basin district layer (owner-supplied, 2026-09-14)
+
+| File | Source | Resolution | CRS | Processing | Status | Updated |
+|---|---|---|---|---|---|---|
+| `data/cnarmada/narmada_basin_districts.geojson` (40 districts, 4 states) | **Owner-supplied** Narmada basin district shapefile (`Narmada_District_shapefile.zip`; GADM-lineage attributes ID_0/ISO/NAME_1/NAME_2/HASC_2), cross-checked against the owner's `STATE and District.xlsx` selection list | district polygon, simplified 0.0005° (topology preserved) | EPSG:4326 (source already WGS84) | `scripts/build_cnarmada_basin.py` | Owner-supplied — **not** Survey of India | 2026-09-14 |
+| `data/cnarmada/narmada_basin_index.json` | Properties-only extract of the above | district | n/a | same script | derived | 2026-09-14 |
+
+**What this layer is and is not.** It is the owner's basin delineation, used
+by the cNARMADA panel **only** to populate the State/District selectors and
+to outline the selected district on the map. It is deliberately NOT presented
+as the Survey of India boundary product the rest of the portal uses
+(`data/boundaries/soi/*`), and the panel says so on screen.
+
+**Every analytic number the cNARMADA panel shows is read at runtime from this
+repo's existing real per-district files** — no new measurement is created by
+this layer:
+
+| Layer | File | Basin coverage |
+|---|---|---|
+| Climate (GEE) | `data/climate/<state>/<district>.json` | 37/40 |
+| Climate (IMD village product) | `data/mp_climate_data.json` | 3/40 (Bhopal, Indore, Jabalpur — by design, not a gap) |
+| NDVI | `data/ndvi/<state>/<district>.json` | 40/40 |
+| Soil moisture | `data/soil_moisture/<state>/<district>.json` | 40/40 |
+| Groundwater | `data/groundwater/<state>/<district>.json` | 40/40 |
+| Crops (DES) | `data/crop_stats_des_by_district/<state>/<district>.json` | 40/40 |
+| Horticulture | `data/horticulture_stats/<state>.json` | 4/4 states (STATE level, labelled as such) |
+| Advisory flags | `data/advisory/<state>/<district>.json` | 40/40 |
+
+**Name resolution.** The basin shapefile spells six districts differently from
+this repo's SoI district index. Each was resolved to the SoI spelling so the
+data files above can be keyed correctly, and the build script raises rather
+than silently dropping a district it cannot resolve:
+
+| Shapefile | Resolved to | Basis |
+|---|---|---|
+| Kabeerdham (CG) | Kabirdham | shapefile's own `VARNAME_2` = "Kabirdham\|Kabeerdham" |
+| Dahod (GJ) | Dohad | shapefile's own `VARNAME_2` = "Dohad" |
+| Chhota Udaipur (GJ) | Chhotaudepur | SoI index spelling |
+| Hoshangabad (MP) | Narmadapuram | official 2021 rename |
+| Narsimhapur (MP) | Narsinghpur | SoI index spelling |
+| West Nimar (MP) | Khargone | same district under its older revenue name |
+
+The owner's Excel and the shapefile were cross-checked by the build script and
+agree on all 40 districts (the only difference being the Kaberdham/Kabeerdham
+spelling of the same district, which resolves to Kabirdham either way).
+
 ## Administrative vintage of the Survey of India district layer (2026-09-14)
 
 **Owner report:** "MP ke sabhi 55 district nahi dikh rahe hain."

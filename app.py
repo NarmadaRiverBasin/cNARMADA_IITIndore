@@ -60,7 +60,11 @@ _JS_FILES = ['mp_climate_loader.js', 'dicra_ndvi_loader.js', 'cadastral_loader.j
              # item 0C part 2 -- reads the selection + live Chart.js
              # instances only, no fetches of its own, but its <script src>
              # must still be inlined here or it 404s on Streamlit.
-             'chart_level_note.js']
+             'chart_level_note.js',
+             # cNARMADA basin panel -- fetches data/cnarmada/* plus the
+             # existing per-district layers, so its <script src> must be
+             # inlined here for the URL patcher to reach those fetches.
+             'cnarmada.js']
 
 
 def get_html_content():
