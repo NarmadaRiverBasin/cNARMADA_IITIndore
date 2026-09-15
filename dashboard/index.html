@@ -505,6 +505,40 @@ body{min-height:100%;background:var(--bg-deep);color:var(--text);font-family:'In
    bottom-panel to jump above the already-stacked right-panel. */
 .map-column{display:flex;flex-direction:column;flex:1;min-width:0;}
 #map-panel{height:68vh;min-height:520px;flex-shrink:0;position:relative;overflow:hidden;}
+/* Owner report 2026-09-15: "BOX MAP fixed rehta hai ... minimise/maximize/
+   auto-fit ka option rahe, jisse poore panel me data dikhe -- map box fix
+   hone se niche data bahut hazy rehta hai." The 68vh above is a real fix
+   (it is what gives Leaflet a bounded box and what stopped the page-scroll
+   bug), so it stays as the DEFAULT. These classes let the user rebalance
+   map vs data deliberately; audit item 8's rule -- that the map must not
+   resize on its own when tabs change -- is preserved, because nothing here
+   changes size unless the user picks a mode (auto-fit is the one mode that
+   re-measures on tab change, and only because the user asked for it). */
+/* No height transition here, deliberately. It was tried and removed: with
+   `transition:height .18s ease` the panel kept settling back to the base
+   rule's 68vh even though an inline `height:...!important` was set and
+   min-height was released (measured: inline 420px !important, used height
+   567.8px). Re-measuring with transition:none held 420px at 0ms, 60ms and
+   860ms, which isolated the transition -- Leaflet's invalidateSize reflow
+   plus the follow-up timer kept restarting the animation. A snap resize is
+   correct here anyway; the map must land at its new size before
+   invalidateSize() reads it. */
+/* min/auto heights are computed in JS (_mapSafeFloor) rather than fixed
+   here: the Location Selector lives INSIDE #map-panel, so a hardcoded
+   floor clipped it -- measured live at 244px tall sitting 70px down, i.e.
+   it needs ~330px, and that figure moves with font size and language.
+   These two rules only release the desktop base rule's 520px min-height so
+   the computed value can actually take effect. */
+#map-panel.mp-min{min-height:0!important;}
+#map-panel.mp-auto{min-height:0!important;}
+#map-panel.mp-max{height:92vh!important;min-height:92vh!important;}
+.map-size-ctrl{position:absolute;top:1rem;left:4.2rem;z-index:600;display:flex;gap:3px;
+  background:var(--bg-card);border:var(--border-default);border-radius:var(--radius-6);padding:3px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.12);}
+.map-size-ctrl button{width:30px;height:28px;border:none;background:transparent;color:#8a9aac;
+  border-radius:var(--radius-4);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+.map-size-ctrl button:hover{background:rgba(26,138,158,0.08);color:var(--cyan);}
+.map-size-ctrl button.on{background:rgba(26,138,158,0.12);color:var(--cyan);}
 /* Owner report 2026-08-14, still open in item 3/20's re-check
    (2026-08-16) and again live-tested 2026-08-20 -- a bright grid of
    lines across the whole-India satellite view, every tile edge. The
@@ -1756,6 +1790,13 @@ body.mk-modal-open #pane-merakhet.active{
       <!-- MAP PANEL -->
       <div id="map-panel">
         <div id="map"></div>
+        <!-- Map/data balance controls (owner request 2026-09-15) -->
+        <div class="map-size-ctrl" role="group" aria-label="Map size">
+          <button type="button" id="mapsz-min" title="Minimise map — give the space below to the data panel" onclick="setMapSize('min')"><i class="fa fa-window-minimize"></i></button>
+          <button type="button" id="mapsz-auto" title="Auto-fit — size the map so the open data panel fits without its own scrollbar" onclick="setMapSize('auto')"><i class="fa fa-arrows-up-down"></i></button>
+          <button type="button" id="mapsz-def" class="on" title="Default map size" onclick="setMapSize('default')"><i class="fa fa-square"></i></button>
+          <button type="button" id="mapsz-max" title="Maximise map" onclick="setMapSize('max')"><i class="fa fa-window-maximize"></i></button>
+        </div>
         <div class="scanline"></div>
         <div class="map-overlay">
           <div class="map-ctrl-btn active" title="Satellite" onclick="toggleLayer(&#39;sat&#39;)"><i class="fa fa-satellite"></i></div>
@@ -4214,6 +4255,113 @@ function toggleVillageBoundaries(){
     clearTimeout(t);
     t = setTimeout(function(){ if (window.leafletMap) window.leafletMap.invalidateSize(); }, 150);
   });
+})();
+
+// ---------------------------------------------------------------
+// Map / data balance (owner request 2026-09-15). The map box had ONE
+// fixed height, so a long bottom pane was squeezed into whatever was
+// left ("niche data bahut hazy rehta hai"). These four modes let the
+// user decide. Default is unchanged, and the chosen mode is remembered.
+//
+// Leaflet must be told after any container resize or the tiles stay laid
+// out for the old box -- every path below ends in invalidateSize().
+// ---------------------------------------------------------------
+var _mapSizeMode = 'default';
+function _mapSizeApplyButtons(mode){
+  ['min','auto','def','max'].forEach(function(k){
+    var b = document.getElementById('mapsz-' + k);
+    if (b) b.classList.remove('on');
+  });
+  var id = mode === 'default' ? 'mapsz-def' : 'mapsz-' + mode;
+  var btn = document.getElementById(id);
+  if (btn) btn.classList.add('on');
+}
+// Plain inline `style.height` does NOT win here -- measured live: the
+// floor computed and was assigned (inlineH=420px) yet the used height
+// stayed 567.8px (= the base rule's 68vh). Setting it with !important is
+// what actually takes, so every height write goes through this one helper.
+function _setMapH(panel, px){
+  if (!panel) return;
+  if (px == null) panel.style.removeProperty('height');
+  else panel.style.setProperty('height', px + 'px', 'important');
+}
+function _mapInvalidate(){
+  try {
+    if (window.leafletMap && window.leafletMap.invalidateSize) {
+      window.leafletMap.invalidateSize({ animate: false });
+    }
+  } catch (e) { console.warn('[mapsize] invalidateSize', e); }
+}
+// The smallest the map may get WITHOUT clipping anything drawn inside it.
+// The Location Selector is a child of #map-panel, so shrinking the map can
+// cut it in half -- caught live: selector 244px tall at a 70px offset, map
+// floored at 190px, clipped by 124px. Measured rather than hardcoded
+// because that height moves with the font scale and with Hindi/English.
+function _mapSafeFloor(){
+  var panel = document.getElementById('map-panel');
+  var floor = 190;
+  if (!panel) return floor;
+  var pr = panel.getBoundingClientRect();
+  ['.map-info-bar', '.map-size-ctrl', '.map-overlay'].forEach(function(sel){
+    var n = panel.querySelector(sel);
+    if (!n) return;
+    var cs = getComputedStyle(n);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+    var r = n.getBoundingClientRect();
+    if (!r.height) return;
+    // distance from the panel's top to this child's bottom, + breathing room
+    floor = Math.max(floor, Math.round((r.top - pr.top) + r.height + 16));
+  });
+  return floor;
+}
+// Auto-fit: shrink the map just enough that the OPEN bottom pane can show
+// its content without its own inner scrollbar, clamped between the measured
+// safe floor and the default height.
+function _mapAutoFit(){
+  var panel = document.getElementById('map-panel');
+  var pane  = document.querySelector('.btm-pane.active');
+  if (!panel) return;
+  panel.classList.add('mp-auto');
+  var floor = _mapSafeFloor();
+  if (!pane) { _setMapH(panel, floor); _mapInvalidate(); return; }
+  var need = pane.scrollHeight || 0;
+  var avail = window.innerHeight;
+  var target = avail - need - 150;           // 150px: tab strip + header + margin
+  var maxH = Math.round(avail * 0.68);
+  var h = Math.max(floor, Math.min(maxH, target));
+  _setMapH(panel, h);
+  _mapInvalidate();
+}
+function setMapSize(mode){
+  var panel = document.getElementById('map-panel');
+  if (!panel) return;
+  _mapSizeMode = mode;
+  panel.classList.remove('mp-min','mp-max','mp-auto');
+  _setMapH(panel, null);
+  if (mode === 'min') {
+    panel.classList.add('mp-min');
+    // Floor measured AFTER the class lands, so the released min-height is
+    // already in effect when the children are measured.
+    _setMapH(panel, _mapSafeFloor());
+  }
+  else if (mode === 'max') panel.classList.add('mp-max');
+  else if (mode === 'auto'){ _mapAutoFit(); }
+  _mapSizeApplyButtons(mode);
+  try { localStorage.setItem('vindhya_map_size', mode); } catch(e){}
+  // after the CSS height transition settles
+  setTimeout(_mapInvalidate, 220);
+}
+// Re-fit on tab change ONLY in auto mode -- this is the one place the map
+// may resize by itself, and only because the user explicitly chose it.
+document.addEventListener('click', function(ev){
+  if (_mapSizeMode !== 'auto') return;
+  if (ev.target && ev.target.closest && ev.target.closest('.btm-tab')) setTimeout(_mapAutoFit, 120);
+}, true);
+window.addEventListener('resize', function(){ if (_mapSizeMode === 'auto') _mapAutoFit(); });
+(function restoreMapSize(){
+  var saved = null;
+  try { saved = localStorage.getItem('vindhya_map_size'); } catch(e){}
+  if (saved && saved !== 'default') setTimeout(function(){ setMapSize(saved); }, 1400);
 })();
 
 function toggleFullMap(){
