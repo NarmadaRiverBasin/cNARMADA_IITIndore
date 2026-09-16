@@ -46,6 +46,29 @@
   var charts = {};
   var cache = {};
 
+  // Agro-climatic zone. This is the SAME coarse classification
+  // mp_climate_loader.js already uses -- a typed-in agro-climatic zone
+  // table, NOT a soil survey and NOT a measured dataset. Two honesty rules
+  // apply here that do not apply there:
+  //   1. mp_climate_loader.js falls back to `malwa` for any unlisted
+  //      district. That is harmless inside MP but would be outright wrong
+  //      for the basin's Gujarat / Chhattisgarh / Maharashtra districts, so
+  //      this lookup returns null instead of guessing.
+  //   2. It is labelled as an indicative zone classification, never as
+  //      "soil type" measured for this district. CLAUDE.md lists soil
+  //      type/pH/NPK among the subjects with NO real source in this repo.
+  var AGRO_ZONES = {
+    'Black Soil (Regur) — Malwa plateau': ['indore','dhar','ujjain','ratlam','mandsaur','neemuch','dewas','shajapur','rajgarh','barwani','khargone','khandwa','burhanpur','alirajpur','jhabua','east_nimar'],
+    'Mixed Red & Black — Bundelkhand': ['sagar','damoh','panna','chhatarpur','tikamgarh','niwari','datia','guna','ashoknagar','shivpuri','morena','bhind','gwalior'],
+    'Alluvial Clay Loam — Narmada valley': ['narsinghpur','jabalpur','narmadapuram','harda','raisen','sehore','bhopal','mandla','dindori'],
+    'Red & Yellow Loam — Vindhya': ['rewa','sidhi','satna','maihar','mauganj','singrauli','shahdol','umaria','anuppur','katni'],
+    'Laterite & Sandy Loam — Satpura': ['balaghat','seoni','chhindwara','betul','pandhurna']
+  };
+  function agroZone(districtSlug) {
+    for (var z in AGRO_ZONES) if (AGRO_ZONES[z].indexOf(districtSlug) >= 0) return z;
+    return null;   // never guess
+  }
+
   function el(id) { return document.getElementById(id); }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s)
@@ -269,6 +292,7 @@
       if (sel.district !== d) return;
       var h = '';
       h += renderHeader(p);
+      h += renderBasinProfile(p, r[0], r[1], r[2], r[3], r[4], r[7]);
       h += renderClimate(p, r[0], r[7]);
       h += renderNdvi(r[1]);
       h += renderSoil(r[2]);
@@ -279,6 +303,8 @@
       body.innerHTML = h;
       drawNdviChart(r[1]);
       drawCropChart(r[4]);
+      drawCropShareChart(r[4]);
+      drawCropTrendChart(r[4]);
     });
   }
 
@@ -293,6 +319,169 @@
       (note ? '<div style="margin-top:6px;font-size:11.5px;opacity:.85;line-height:1.6">' + note + '</div>' : ''),
       'Boundary source · ' + esc(BMETA.source || 'owner-supplied basin shapefile') +
       '. Used for selection and outline only — <b>not</b> the Survey of India boundary product used elsewhere in this portal.');
+  }
+
+  // ------------------------------------------------------------------
+  // Basin Profile -- the "Village Profile"-style summary the owner asked
+  // for, but for a basin district. Every tile is a REAL published value
+  // pulled from the layer files above; where a layer is missing the tile
+  // says so rather than showing a zero.
+  // ------------------------------------------------------------------
+  function tile(label, value, sub, accent) {
+    return '<div style="flex:1 1 130px;border:1px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--bg-card)">' +
+      '<div style="font-size:9.5px;font-weight:800;letter-spacing:.05em;opacity:.65;text-transform:uppercase">' + label + '</div>' +
+      '<div style="font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px' +
+      (accent ? ';color:' + accent : '') + '">' + value + '</div>' +
+      (sub ? '<div style="font-size:10px;opacity:.65;margin-top:1px">' + sub + '</div>' : '') + '</div>';
+  }
+
+  function cropAgg(cs) {
+    // Share of sown area by crop in the latest published year, and the
+    // multi-year series for the top crops. Plain sums of published DES
+    // numbers -- nothing modelled.
+    if (!cs || !cs.records || !cs.records.length) return null;
+    var years = [];
+    cs.records.forEach(function (r) { if (years.indexOf(r.year) < 0) years.push(r.year); });
+    years.sort();
+    var latest = years[years.length - 1];
+    var byCrop = {};
+    cs.records.filter(function (r) { return r.year === latest && r.area_ha != null; })
+      .forEach(function (r) { byCrop[r.crop] = (byCrop[r.crop] || 0) + r.area_ha; });
+    var rows = Object.keys(byCrop).map(function (c) { return { crop: c, area: byCrop[c] }; })
+      .sort(function (a, b) { return b.area - a.area; });
+    var total = rows.reduce(function (a, r) { return a + r.area; }, 0);
+    return { years: years, latest: latest, rows: rows, total: total };
+  }
+
+  function renderBasinProfile(p, gee, ndvi, sm, gw, cs, mpimd) {
+    var tiles = '';
+    // rainfall + heat: GEE district file, or the IMD village product for the 3
+    var idx = (gee && gee.indices) || (mpimd && mpimd.districts && mpimd.districts[p.district_slug] && mpimd.districts[p.district_slug].indices) || null;
+    var rain = idx ? (idx.annual_rain_mm != null ? idx.annual_rain_mm : idx.annual_rain_mm_mean) : null;
+    tiles += tile('Annual rainfall', rain != null ? num(rain, 0) + ' mm' : 'n/a',
+                  idx ? '2000–2024 mean' : 'no climate file', '#1a8a9e');
+    tiles += tile('Max summer Tmax', idx && idx.max_summer_tmax != null ? num(idx.max_summer_tmax, 1) + ' °C' : 'n/a',
+                  idx ? '2000–2024' : 'no climate file', '#c26b1f');
+    tiles += tile('Drought probability', idx && idx.drought_probability_pct != null ? num(idx.drought_probability_pct, 1) + '%' : 'n/a',
+                  idx ? 'share of years' : 'no climate file', '#96231f');
+    var ps = ndvi && ndvi.period_summary;
+    tiles += tile('NDVI mean', ps ? num(ps.ndvi_mean, 3) : 'n/a', ps ? esc(ps.years_covered) : 'no NDVI file', '#2d8f5c');
+    tiles += tile('Surface soil moisture', sm && sm.district ? num(sm.district.sm_surface_mean, 3) + ' m³/m³' : 'n/a',
+                  sm ? 'SMAP ~9 km mean' : 'no SMAP file', '#3a9d8f');
+    // .trend is an OBJECT ({mean_slope_m_per_year, direction,
+    // n_stations_with_trend}) -- printing it directly rendered
+    // "below ground · [object Object]" on screen. Caught live.
+    var gwTrend = (gw && gw.district && gw.district.trend) || null;
+    var gwSub = gw && gw.district
+      ? 'below ground' + (gwTrend && gwTrend.direction ? ' · ' + esc(gwTrend.direction) : '')
+      : 'no CGWB file';
+    tiles += tile('Groundwater level', gw && gw.district && gw.district.latest_gwl_mean_m != null ? num(gw.district.latest_gwl_mean_m, 2) + ' m' : 'n/a',
+                  gwSub, '#14508f');
+
+    var agg = cropAgg(cs);
+    if (agg) {
+      tiles += tile('Net sown area', num(agg.total, 0) + ' ha', 'all crops, ' + esc(agg.latest), '#6b4f2a');
+      tiles += tile('Crops reported', agg.rows.length, esc(agg.latest), '#5a4b8a');
+    }
+
+    var zone = agroZone(p.district_slug);
+    var inner = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">' + tiles + '</div>';
+
+    // Soil / agro-climatic zone -- honest about what it is
+    inner += '<div style="border:1px solid var(--border);border-radius:7px;padding:8px 10px;margin-bottom:10px;background:var(--bg-card)">' +
+      '<div style="font-size:9.5px;font-weight:800;letter-spacing:.05em;opacity:.65;text-transform:uppercase">Soil / agro-climatic zone</div>';
+    if (zone) {
+      inner += '<div style="font-size:13.5px;font-weight:700;margin-top:2px">' + esc(zone) + '</div>' +
+        '<div style="font-size:10.5px;opacity:.75;margin-top:3px;line-height:1.55">Indicative <b>agro-climatic zone</b> classification, not a soil survey ' +
+        'and not measured for this district. No Soil Health Card / soil-survey dataset is integrated in this portal.</div>';
+    } else {
+      inner += '<div style="font-size:13px;font-weight:700;margin-top:2px;opacity:.85">Not available</div>' +
+        '<div style="font-size:10.5px;opacity:.75;margin-top:3px;line-height:1.55">The zone table this portal carries covers Madhya Pradesh districts only, ' +
+        'so no zone is claimed for ' + esc(p.district) + ' (' + esc(p.state) + '). A neighbouring zone is deliberately not substituted.</div>';
+    }
+    inner += '</div>';
+
+    if (agg) {
+      inner += '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<div style="flex:1 1 240px;min-width:0"><div style="font-size:10px;font-weight:800;letter-spacing:.05em;opacity:.65;text-transform:uppercase;margin-bottom:4px">Major crops — share of sown area (' + esc(agg.latest) + ')</div>' +
+        '<div class="chart-wrap u-h140"><canvas id="cn-chart-share"></canvas></div></div>' +
+        '<div style="flex:1 1 240px;min-width:0"><div style="font-size:10px;font-weight:800;letter-spacing:.05em;opacity:.65;text-transform:uppercase;margin-bottom:4px">Top crops — sown area over time</div>' +
+        '<div class="chart-wrap u-h140"><canvas id="cn-chart-trend"></canvas></div></div></div>';
+      var top = agg.rows.slice(0, 5);
+      inner += '<table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:9px">' +
+        '<tr style="text-align:left;font-size:9.5px;opacity:.65"><th style="padding:3px 0">MAJOR CROP</th>' +
+        '<th style="text-align:right">AREA (ha)</th><th style="text-align:right">SHARE</th></tr>';
+      top.forEach(function (r) {
+        inner += '<tr style="border-top:1px solid var(--border)"><td style="padding:3px 0">' + esc(r.crop) + '</td>' +
+          '<td style="text-align:right">' + num(r.area, 0) + '</td>' +
+          '<td style="text-align:right;font-weight:700">' + num(r.area / agg.total * 100, 1) + '%</td></tr>';
+      });
+      inner += '</table>';
+    }
+
+    return card('Basin Profile — ' + esc(p.district), 'real data',
+      inner,
+      'Every tile above is a published value read from this portal\'s existing per-district files ' +
+      '(climate, NDVI, SMAP, CGWB, DES). Nothing on this card is modelled or interpolated; where a layer has no file ' +
+      'for this district the tile reads n/a rather than showing a zero.');
+  }
+
+  var CROP_COLORS = ['#2d8f5c','#5cc3cd','#c9a843','#c26b1f','#b07fd0','#e08a8a','#8ad3aa','#9aa7b2'];
+
+  function drawCropShareChart(cs) {
+    var agg = cropAgg(cs);
+    var cv = el('cn-chart-share');
+    if (!agg || !cv || typeof Chart === 'undefined') return;
+    var top = agg.rows.slice(0, 6);
+    var other = agg.total - top.reduce(function (a, r) { return a + r.area; }, 0);
+    var labels = top.map(function (r) { return r.crop; });
+    var data = top.map(function (r) { return Math.round(r.area); });
+    if (other > 0) { labels.push('All other crops'); data.push(Math.round(other)); }
+    charts.share = new Chart(cv, {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: data, backgroundColor: CROP_COLORS, borderWidth: 1, borderColor: '#fff' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '52%',
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 9, font: { size: 10 } } },
+          tooltip: { callbacks: { label: function (i) {
+            return i.label + ': ' + Number(i.parsed).toLocaleString('en-IN') + ' ha (' +
+              (i.parsed / agg.total * 100).toFixed(1) + '%)';
+          } } }
+        }
+      }
+    });
+  }
+
+  function drawCropTrendChart(cs) {
+    var agg = cropAgg(cs);
+    var cv = el('cn-chart-trend');
+    if (!agg || !cv || typeof Chart === 'undefined') return;
+    var top = agg.rows.slice(0, 3).map(function (r) { return r.crop; });
+    var byCropYear = {};
+    cs.records.forEach(function (r) {
+      if (r.area_ha == null) return;
+      var k = r.crop + '||' + r.year;
+      byCropYear[k] = (byCropYear[k] || 0) + r.area_ha;
+    });
+    var opts = baseOpts('Sown area (ha)', 'Crop year');
+    opts.plugins = opts.plugins || {};
+    opts.plugins.legend = { display: true, labels: { boxWidth: 9, font: { size: 10 } } };
+    charts.trend = new Chart(cv, {
+      type: 'line',
+      data: {
+        labels: agg.years,
+        datasets: top.map(function (c, i) {
+          return {
+            label: c,
+            data: agg.years.map(function (y) { var v = byCropYear[c + '||' + y]; return v == null ? null : v; }),
+            borderColor: CROP_COLORS[i], backgroundColor: CROP_COLORS[i],
+            borderWidth: 2, tension: 0.25, pointRadius: 0, spanGaps: false
+          };
+        })
+      },
+      options: opts
+    });
   }
 
   function renderClimate(p, gee, mp) {
@@ -357,7 +546,13 @@
       kv([['Latest mean water level', num(dd.latest_gwl_mean_m, 2) + ' m bgl'],
           ['Latest reading date', esc(dd.latest_reading_date)],
           ['Monitoring stations', dd.n_stations != null ? dd.n_stations : '—'],
-          ['Trend', esc(dd.trend)]]),
+          ['Trend', dd.trend && dd.trend.direction
+              ? esc(dd.trend.direction) +
+                (dd.trend.mean_slope_m_per_year != null
+                  ? ' (' + num(dd.trend.mean_slope_m_per_year, 3) + ' m/yr' +
+                    (dd.trend.n_stations_with_trend != null ? ', ' + dd.trend.n_stations_with_trend + ' stations' : '') + ')'
+                  : '')
+              : '—']]),
       'Source · ' + esc(m.source || 'Central Ground Water Board') + ' · ' + esc(m.unit || 'metres below ground level') +
       ' · real monitoring-station readings, not an interpolated surface.');
   }
